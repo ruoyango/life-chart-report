@@ -1,5 +1,6 @@
 // Content lookups over lines.json + display metadata for the report sections.
 import lines from "../data/lines.json";
+// import sheet from "../data/sheet.json";
 
 const storylines = lines.story as Record<string, string | string[]>;
 const rootLines = lines.root as Record<string, string | string[]>;

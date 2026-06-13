@@ -30,6 +30,11 @@ jobs:
 
       - run: npm ci                          # clean install from package-lock.json
 
+      - name: Generate data from Google Sheet
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: node scripts/fetch-sheet.mjs
+
       - run: npm run build                   # produces ./out because output:"export"
 
       - uses: actions/upload-pages-artifact@v3   # package ./out as the Pages artifact
