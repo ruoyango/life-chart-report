@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+# When to run: on every push to main, plus a manual button
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permissions the deploy needs (least-privilege)
+permissions:
+  contents: read      # to checkout your code
+  pages: write        # to publish to Pages
+  id-token: write     # to prove the deploy came from this workflow (OIDC)
+
+# Don't let two deploys race each other
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4            # clone your repo onto the runner
+
+      - uses: actions/setup-node@v4          # install Node
+        with:
+          node-version: 20
+          cache: npm                         # cache ~/.npm between runs (needs package-lock.json)
+
+      - run: npm ci                          # clean install from package-lock.json
+
+      - run: npm run build                   # produces ./out because output:"export"
+
+      - uses: actions/upload-pages-artifact@v3   # package ./out as the Pages artifact
+        with:
+          path: ./out
+
+  deploy:
+    needs: build                             # only run after build succeeds
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}   # shows the live URL in the UI
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4        # takes the artifact and publishes it
