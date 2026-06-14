@@ -156,7 +156,7 @@ export function computeChart(birthDate: string): Chart {
     ? (() => {
         const center = reduceToSingle(reducedBirthDate[1] + reducedBirthDate[2] + middle[0] + middle[1]);
         const north = reduceToSingle(reducedBirthDate[1] + reducedBirthDate[2]);
-        const south = reduceToSingle(reducedBirthDate[1] + reducedBirthDate[2] + rootNumber);
+        const south = reduceToSingle(middle[0] + middle[1] + rootNumber);
         const northeast = reduceToSingle(reducedBirthDate[2] + reducedBirthDate[3] + middle[1]);
         const southeast = reduceToSingle(reducedBirthDate[3] + middle[1] + rootNumber);
         const east = reduceToSingle(northeast + southeast);
