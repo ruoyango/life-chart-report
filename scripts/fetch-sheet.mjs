@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 
 const SHEET_ID = "1ILSdmS8fcZiMuNkgf2ZbByz8B_DX9vD_laICobdh3rM";
 
@@ -30,5 +30,8 @@ res.data.valueRanges.forEach((vr, i) => {
   );
 });
 
+// src/data/ is gitignored (sheet.json is generated), so it may not exist on a
+// clean checkout — create it before writing.
+mkdirSync("src/data", { recursive: true });
 writeFileSync("src/data/sheet.json", JSON.stringify(result, null, 2));
 console.log(`Wrote ${tabNames.length} tabs: ${tabNames.join(", ")}`);
