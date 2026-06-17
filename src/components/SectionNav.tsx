@@ -49,12 +49,6 @@ export function SectionNav() {
     <nav ref={navRef} className="fixed left-0 top-24 z-40">
       {open ? (
         <div className="ml-2 max-h-[80vh] w-44 overflow-y-auto rounded-xl border border-amber-200/70 bg-white/85 p-3 shadow-lg ring-1 ring-amber-100/50 backdrop-blur">
-          <button
-            type="button"
-            className="mb-3 w-full rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
-          >
-            登录
-          </button>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
               目录

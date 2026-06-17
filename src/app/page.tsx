@@ -4,6 +4,9 @@ import { useState } from "react";
 import { computeChart } from "../lib/numerology";
 import { SectionNav } from "../components/SectionNav";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { AuthProvider } from "../components/AuthProvider";
+import { AuthModal } from "../components/AuthModal";
+import { AccountMenu } from "../components/AccountMenu";
 import { InputSection } from "../components/sections/InputSection";
 import { ChartSection } from "../components/sections/ChartSection";
 import { AiSummarySection } from "../components/sections/AiSummarySection";
@@ -25,9 +28,12 @@ export default function Home() {
   const chart = computeChart(birthDate);
 
   return (
+    <AuthProvider>
     <div className="flex flex-col flex-1 items-center justify-center bg-gradient-to-b from-amber-100 to-amber-50 font-sans">
       <SectionNav />
+      <AccountMenu />
       <ThemeToggle />
+      <AuthModal />
       <main className="flex flex-1 w-full max-w-6xl flex-col gap-10 pt-20 pb-32 px-4 sm:px-8 lg:px-16">
         <header className="title-container w-full flex-col items-start gap-2 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-100 to-white px-8 py-10 text-left shadow-sm ring-1 ring-amber-100/50">
           <h1 className="title">天数字学数姿艺</h1>
@@ -76,5 +82,6 @@ export default function Home() {
         </div>
       </main>
     </div>
+    </AuthProvider>
   );
 }

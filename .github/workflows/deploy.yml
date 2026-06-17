@@ -38,7 +38,13 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: node scripts/fetch-sheet.mjs
 
-      - run: npm run build                   # produces ./out because output:"export"
+      - name: Build static site
+        env:
+          # Public Supabase config — embedded into the client bundle at build.
+          # Safe to expose (anon key is RLS-protected). Set these as repo secrets.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npm run build                   # produces ./out because output:"export"
 
       - uses: actions/upload-pages-artifact@v3   # package ./out as the Pages artifact
         with:

@@ -1,4 +1,5 @@
 import sheet from "../data/sheet.json";
+import type { Chart } from "./numerology";
 
 // number/element -> line, from a flat [{number|element, line|body|careers}] array.
 function byKey<T extends Record<string, string>>(
@@ -161,4 +162,64 @@ export function getCareerPlan(element: string) {
     const line = Array.isArray(raw) ? raw.join("\n") : raw ?? "";
     return { element: el, line };
   });
+}
+
+// ── AI summary source material ────────────────────────────────────────────────
+
+export type StorySource = { title: string; lines: string[] };
+
+// Collect the personalised lines the five source sections display for this
+// chart — the raw material the AI synthesises into the 总体故事 section.
+export function collectStorySources(chart: Chart): StorySource[] {
+  const tidy = (lines: string[]) => lines.map((l) => l.trim()).filter(Boolean);
+
+  // 数字故事 — root number line + each unique story-number line.
+  const story: string[] = [];
+  const rootLine = getRootLine(chart.rootNumber);
+  if (rootLine) story.push(`根数 ${chart.rootNumber}：${rootLine}`);
+  for (const num of chart.uniqueStoryNumbers) {
+    const line = getStoryLine(num);
+    if (line) story.push(`${num}：${line}`);
+  }
+
+  // 隐藏性格 — five slots over the hidden numbers (matches HiddenCharacterSection).
+  const hiddenSlots: { key: string; label: string; index: number }[] = [
+    { key: "hidden", label: "隐藏性格", index: 0 },
+    { key: "parent", label: "与父亲关系", index: 1 },
+    { key: "parent", label: "与母亲关系", index: 2 },
+    { key: "impression", label: "外表给人的感觉", index: 3 },
+    { key: "subconscious", label: "潜意识性格", index: 4 },
+  ];
+  const hidden = hiddenSlots.map((s) => {
+    const n = chart.hiddenNumbers[s.index];
+    const line = getCharacteristicsLine(s.key, n);
+    return line ? `${s.label}（${n}）：${line}` : "";
+  });
+
+  // 能力分布 — the 1-9 ability lines.
+  const ability = chart.countMajorMinor.map((count, i) => {
+    const line = getMajorMinorLine(i, count);
+    return line ? `数字 ${i + 1}（出现 ${count} 次）：${line}` : "";
+  });
+
+  // 健康关系 — only the imbalanced (flagged) elements carry a line.
+  const health: string[] = [];
+  for (const [element, count] of Object.entries(chart.countHealth)) {
+    if (!getHealthStatus(count).warn) continue;
+    const line = getHealthLine(element, count);
+    if (line) health.push(`${ELEMENT_META[element]?.label ?? element}：${line}`);
+  }
+
+  // 事业和职业选择 — the ranked career recommendations.
+  const career = getCareerPlan(chart.careerElement).map(({ element, line }) =>
+    line ? `${ELEMENT_META[element]?.label ?? element}行：${line}` : "",
+  );
+
+  return [
+    { title: "数字故事", lines: tidy(story) },
+    { title: "隐藏性格", lines: tidy(hidden) },
+    { title: "能力分布", lines: tidy(ability) },
+    { title: "健康关系", lines: tidy(health) },
+    { title: "事业和职业选择", lines: tidy(career) },
+  ];
 }
