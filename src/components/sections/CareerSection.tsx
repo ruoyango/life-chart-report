@@ -17,7 +17,7 @@ export function CareerSection({ birthDate, chart }: { birthDate: string; chart: 
                 className={`rounded-xl border p-4 transition sm:p-5 ${
                   isTop
                     ? "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
-                    : "border-amber-100 bg-amber-50/40 hover:bg-amber-50"
+                    : "subcard border-amber-100 bg-amber-50/40 hover:bg-amber-50"
                 }`}
               >
                 <div className="flex flex-wrap items-center gap-3">

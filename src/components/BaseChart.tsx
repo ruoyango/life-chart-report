@@ -5,6 +5,12 @@ const reducedX = [188, 329, 471, 612]; // top tier: 2 left, 2 right
 const middleX = [310, 490]; // middle tier: left, right
 const sideY = 475; // vertical position of the side equations
 
+// Colours come from CSS variables (see globals.css) so the chart adapts to the
+// dark theme. SVG presentation attributes don't accept var(), so they're applied
+// via `style` instead.
+const textStyle = { fill: "var(--chart-text)" };
+const lineStyle = { stroke: "var(--chart-line)" };
+
 // The inverted-pyramid Life Chart diagram (the four date numbers + SVG).
 export function BaseChart({ chart }: { chart: Chart }) {
   const {
@@ -35,36 +41,36 @@ export function BaseChart({ chart }: { chart: Chart }) {
         viewBox="0 0 800 720"
         className="w-full"
         fill="none"
-        stroke="#78350f"
         strokeWidth={2.5}
         strokeLinejoin="round"
         strokeLinecap="round"
+        style={{ stroke: "var(--chart-stroke)" }}
       >
         <defs>
           <filter id="triShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#b45309" floodOpacity="0.18" />
+            <feDropShadow dx="0" dy="6" stdDeviation="7" floodOpacity="0.18" style={{ floodColor: "var(--chart-flood)" }} />
           </filter>
         </defs>
 
         {/* Soft shadow cast by the whole pyramid */}
-        <polygon points="60,40 740,40 400,520" fill="#fde68a" stroke="none" filter="url(#triShadow)" />
+        <polygon points="60,40 740,40 400,520" stroke="none" filter="url(#triShadow)" style={{ fill: "var(--chart-shadow)" }} />
 
-        {/* Tier fills — pastel layers behind the outline */}
-        <polygon points="60,40 740,40 633.75,190 166.25,190" fill="#fef3c7" stroke="none" />
-        <polygon points="166.25,190 633.75,190 527.5,340 272.5,340" fill="#fde68a" stroke="none" />
-        <polygon points="272.5,340 527.5,340 400,520" fill="#fcd34d" stroke="none" />
+        {/* Tier fills — layers behind the outline */}
+        <polygon points="60,40 740,40 633.75,190 166.25,190" stroke="none" style={{ fill: "var(--chart-fill-1)" }} />
+        <polygon points="166.25,190 633.75,190 527.5,340 272.5,340" stroke="none" style={{ fill: "var(--chart-fill-2)" }} />
+        <polygon points="272.5,340 527.5,340 400,520" stroke="none" style={{ fill: "var(--chart-fill-3)" }} />
 
         {/* Outer inverted triangle */}
         <polygon points="60,40 740,40 400,520" />
 
         {/* Tier divider 1 (upper) — splits upper region into two equal tiers */}
-        <line x1="166.25" y1="190" x2="633.75" y2="190" stroke="#b45309" strokeWidth={1.5} />
+        <line x1="166.25" y1="190" x2="633.75" y2="190" strokeWidth={1.5} style={lineStyle} />
 
         {/* Tier divider 2 (lower) — top of the enlarged bottom triangle */}
-        <line x1="272.5" y1="340" x2="527.5" y2="340" stroke="#b45309" strokeWidth={1.5} />
+        <line x1="272.5" y1="340" x2="527.5" y2="340" strokeWidth={1.5} style={lineStyle} />
 
         {/* Vertical center line — from top edge down to the second divider */}
-        <line x1="400" y1="40" x2="400" y2="340" stroke="#b45309" strokeWidth={1.5} />
+        <line x1="400" y1="40" x2="400" y2="340" strokeWidth={1.5} style={lineStyle} />
 
         {/* Baseline — touches the apex, extends past the triangle on both sides */}
         <line x1="20" y1="520" x2="780" y2="520" />
@@ -78,8 +84,8 @@ export function BaseChart({ chart }: { chart: Chart }) {
             textAnchor="middle"
             fontSize="30"
             fontWeight="600"
-            fill="#78350f"
             stroke="none"
+            style={textStyle}
           >
             {show(n)}
           </text>
@@ -94,8 +100,8 @@ export function BaseChart({ chart }: { chart: Chart }) {
             textAnchor="middle"
             fontSize="30"
             fontWeight="600"
-            fill="#78350f"
             stroke="none"
+            style={textStyle}
           >
             {show(n)}
           </text>
@@ -108,21 +114,21 @@ export function BaseChart({ chart }: { chart: Chart }) {
           textAnchor="middle"
           fontSize="38"
           fontWeight="700"
-          fill="#7c2d12"
           stroke="none"
+          style={{ fill: "var(--chart-root)" }}
         >
           {show(rootNumber)}
         </text>
 
         {/* Below the baseline: middle + bottom (1 left, 1 right) */}
-        <text x="300" y="600" textAnchor="middle" fontSize="30" fontWeight="600" fill="#78350f" stroke="none">
+        <text x="300" y="600" textAnchor="middle" fontSize="30" fontWeight="600" stroke="none" style={textStyle}>
           {show(belowLeft)}
         </text>
-        <text x="500" y="600" textAnchor="middle" fontSize="30" fontWeight="600" fill="#78350f" stroke="none">
+        <text x="500" y="600" textAnchor="middle" fontSize="30" fontWeight="600" stroke="none" style={textStyle}>
           {show(belowRight)}
         </text>
 
-        <text x="400" y="700" textAnchor="middle" fontSize="30" fontWeight="600" fill="#78350f" stroke="none">
+        <text x="400" y="700" textAnchor="middle" fontSize="30" fontWeight="600" stroke="none" style={textStyle}>
           {show(belowLast)}
         </text>
 
@@ -133,9 +139,9 @@ export function BaseChart({ chart }: { chart: Chart }) {
           textAnchor="middle"
           fontSize="30"
           fontWeight="500"
-          fill="#78350f"
           stroke="none"
           wordSpacing="20"
+          style={textStyle}
         >
           {`${show(leftSide[2])} = ${show(leftSide[0])} ${show(leftSide[1])}`}
         </text>
@@ -147,9 +153,9 @@ export function BaseChart({ chart }: { chart: Chart }) {
           textAnchor="middle"
           fontSize="30"
           fontWeight="500"
-          fill="#78350f"
           stroke="none"
           wordSpacing="20"
+          style={textStyle}
         >
           {`${show(rightSide[0])} ${show(rightSide[1])} = ${show(rightSide[2])}`}
         </text>

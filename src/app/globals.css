@@ -3,6 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Base Chart (inverted-pyramid) colours — overridden in dark mode below. */
+  --chart-stroke: #78350f; /* outer triangle + baseline */
+  --chart-line: #b45309; /* dividers + centre line */
+  --chart-text: #78350f; /* tier numbers / side equations */
+  --chart-root: #7c2d12; /* root number */
+  --chart-fill-1: #fef3c7; /* top tier fill */
+  --chart-fill-2: #fde68a; /* middle tier fill */
+  --chart-fill-3: #fcd34d; /* bottom tier fill */
+  --chart-shadow: #fde68a; /* soft cast shadow polygon */
+  --chart-flood: #b45309; /* drop-shadow flood colour */
+
+  /* Elevation for the sub-cards inside each section. */
+  --subcard-shadow: 0 1px 2px rgba(120, 53, 15, 0.06), 0 6px 16px -6px rgba(120, 53, 15, 0.14);
+  --subcard-shadow-hover: 0 2px 4px rgba(120, 53, 15, 0.1), 0 14px 26px -8px rgba(120, 53, 15, 0.22);
 }
 
 @theme inline {
@@ -23,6 +38,77 @@ html {
   }
 }
 
+/* ── Dark (purple) theme ────────────────────────────────────────────────────
+   The whole UI is built on Tailwind's `amber` (surfaces + accents) and `zinc`
+   (text) scales. Tailwind v4 compiles every colour utility to var(--color-*),
+   so re-mapping those variables under `.dark` recolours the entire app without
+   touching any component. The amber/zinc lightness is inverted (light surfaces
+   become deep purple; dark accent text becomes light lavender) and shifted to a
+   violet hue. */
+@media screen {
+html.dark {
+  color-scheme: dark;
+
+  --background: #241c45;
+  --foreground: #f1eefb;
+
+  /* surfaces → muted purple (lighter than before), accents → light lavender */
+  --color-amber-50: #2c2356;
+  --color-amber-100: #352b64;
+  --color-amber-200: #574a8c; /* borders — clearly visible against surfaces */
+  --color-amber-300: #6a5ca5;
+  --color-amber-400: #9a7cff;
+  --color-amber-500: #b29bff;
+  --color-amber-600: #c2b0ff;
+  --color-amber-700: #d2c4ff;
+  --color-amber-800: #e0d6ff;
+  --color-amber-900: #f1ebff;
+
+  /* body text → light greys */
+  --color-zinc-400: #a49dbd;
+  --color-zinc-500: #b6afce;
+  --color-zinc-600: #c7c1dc;
+  --color-zinc-700: #ddd8ec;
+  --color-zinc-800: #ebe7f6;
+  --color-zinc-900: #f5f3fc;
+
+  /* `white` is used as a light card / gradient stop → dark purple surface */
+  --color-white: #2f2657;
+
+  /* Base Chart → near-white lavender lines on lighter purple tiers */
+  --chart-stroke: #ece5ff;
+  --chart-line: #cdbcff;
+  --chart-text: #f3eeff;
+  --chart-root: #ffffff;
+  --chart-fill-1: #3a3070;
+  --chart-fill-2: #473c86;
+  --chart-fill-3: #56489c;
+  --chart-shadow: #2c2358;
+  --chart-flood: #6a55b0;
+
+  /* Darker, stronger elevation + a faint top highlight so cards lift off the bg */
+  --subcard-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.35), 0 10px 22px -8px rgba(0, 0, 0, 0.6);
+  --subcard-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 4px 8px rgba(0, 0, 0, 0.4), 0 18px 32px -10px rgba(0, 0, 0, 0.7);
+}
+
+/* Native form controls need an explicit dark surface (and dark picker chrome) */
+html.dark input {
+  background-color: var(--color-amber-50);
+  color: var(--color-zinc-900);
+}
+} /* @media screen — dark theme is not applied when printing */
+
+/* Gentle cross-fade when switching themes */
+body,
+.section-card,
+header,
+input,
+button,
+[class*="bg-"],
+[class*="border-"] {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -30,6 +116,18 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Sub-cards inside each section — stronger border + elevation so they stand out
+   from the section background (in both light and dark themes). Defined outside
+   any @layer so it overrides the faint Tailwind border utilities on the cards. */
+.subcard {
+  border-color: var(--color-amber-200);
+  box-shadow: var(--subcard-shadow);
+}
+.subcard:hover {
+  border-color: var(--color-amber-300);
+  box-shadow: var(--subcard-shadow-hover);
 }
 
 /* Auto-numbered report sections (01, 02, …) */
@@ -113,7 +211,12 @@ div .title-container {
   }
 
   /* Flatten heavy shadows/rings so cards print cleanly */
-  .section-card {
+  .section-card,
+  .subcard {
     box-shadow: none !important;
+  }
+  /* Keep a thin readable outline on the sub-cards in the PDF */
+  .subcard {
+    border-color: #e5d6b0 !important;
   }
 }

@@ -19,7 +19,7 @@ export function AbilitySection({ birthDate, chart }: { birthDate: string; chart:
               return (
                 <div
                   key={index + 1}
-                  className="rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50 hover:shadow-sm"
+                  className="subcard rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50"
                   style={{ borderLeftColor: status.color }}
                 >
                   <div className="flex items-start justify-between gap-3">

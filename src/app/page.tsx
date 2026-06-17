@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { computeChart } from "../lib/numerology";
 import { SectionNav } from "../components/SectionNav";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { InputSection } from "../components/sections/InputSection";
 import { ChartSection } from "../components/sections/ChartSection";
 import { AiSummarySection } from "../components/sections/AiSummarySection";
@@ -12,15 +13,20 @@ import { AbilitySection } from "../components/sections/AbilitySection";
 import { HealthSection } from "../components/sections/HealthSection";
 import { CareerSection } from "../components/sections/CareerSection";
 import { DirectionsSection } from "../components/sections/DirectionsSection";
+import { PlaceholderSection } from "../components/sections/PlaceholderSection";
+import { PlanetsSection } from "../components/sections/PlanetsSection";
 import './globals.css'
 
 export default function Home() {
   const [birthDate, setBirthDate] = useState("");
+  const [phone, setPhone] = useState("");
+  const [ic, setIc] = useState("");
   const chart = computeChart(birthDate);
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-gradient-to-b from-amber-100 to-amber-50 font-sans">
       <SectionNav />
+      <ThemeToggle />
       <main className="flex flex-1 w-full max-w-6xl flex-col gap-10 pt-20 pb-32 px-4 sm:px-8 lg:px-16">
         <header className="title-container w-full flex-col items-start gap-2 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-100 to-white px-8 py-10 text-left shadow-sm ring-1 ring-amber-100/50">
           <h1 className="title">天数字学数姿艺</h1>
@@ -28,7 +34,14 @@ export default function Home() {
         </header>
 
         <div id="sec-input" className="w-full scroll-mt-24">
-          <InputSection birthDate={birthDate} onBirthDateChange={setBirthDate} />
+          <InputSection
+            birthDate={birthDate}
+            onBirthDateChange={setBirthDate}
+            phone={phone}
+            onPhoneChange={setPhone}
+            ic={ic}
+            onIcChange={setIc}
+          />
         </div>
         <div id="sec-chart" className="w-full scroll-mt-24">
           <ChartSection chart={chart} />
@@ -53,6 +66,9 @@ export default function Home() {
         </div>
         <div id="sec-directions" className="w-full scroll-mt-24">
           <DirectionsSection birthDate={birthDate} chart={chart} />
+        </div>
+        <div id="sec-extra1" className="w-full scroll-mt-24">
+          <PlanetsSection birthDate={birthDate} ic={ic} phone={phone} chart={chart} />
         </div>
       </main>
     </div>

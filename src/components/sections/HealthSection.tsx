@@ -20,7 +20,7 @@ export function HealthSection({ birthDate, chart }: { birthDate: string; chart: 
               return (
                 <div
                   key={element}
-                  className="rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50 hover:shadow-sm"
+                  className="subcard rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50"
                   style={{ borderLeftColor: meta.color }}
                 >
                   <div className="flex items-start justify-between gap-3">

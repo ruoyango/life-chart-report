@@ -4,7 +4,7 @@ import { type Chart } from "../../lib/numerology";
 import { getCharacteristicsLine } from "../../lib/content";
 
 const cardClass =
-  "rounded-xl border border-amber-100 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:bg-amber-50 hover:shadow-sm";
+  "subcard rounded-xl border border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50";
 const bodyClass = "mt-2 whitespace-pre-line leading-relaxed text-zinc-700";
 const fallback = "No story line available for this number.";
 

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // Sticky table-of-contents for jumping between report sections (desktop only).
 const NAV_ITEMS = [
   { id: "sec-input", label: "核心资料" },
-  { id: "sec-chart", label: "个人图表" },
+  { id: "sec-chart", label: "个人蓝图" },
   { id: "sec-summary", label: "总体故事" },
   { id: "sec-story", label: "数字故事" },
   { id: "sec-hidden", label: "隐藏性格" },
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { id: "sec-health", label: "健康关系" },
   { id: "sec-career", label: "事业选择" },
   { id: "sec-directions", label: "最好方向" },
+  { id: "sec-extra1", label: "八大行星" },
 ];
 
 export function SectionNav() {

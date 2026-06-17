@@ -19,6 +19,21 @@ export function reduceToSingle(n: number): number {
 // Chart values are numeric; show "–" until a date produces real numbers.
 export const show = (n: number): number | string => (Number.isNaN(n) ? "–" : n);
 
+// Convert an IC like "S1234567A" into an 11-digit string by replacing the
+// leading and trailing letters with their 2-digit alphabet position
+// (A → 01, S → 19, Z → 26); digits in between are kept as-is.
+// "S1234567A" → "19" + "1234567" + "01" = "19123456701".
+export function icToNumber(raw: string): string {
+  const ic = (raw ?? "").trim().toUpperCase();
+  if (ic.length < 2) return ic;
+  const letterToPair = (c: string) =>
+    /[A-Z]/.test(c) ? String(c.charCodeAt(0) - 64).padStart(2, "0") : c;
+  const first = letterToPair(ic[0]);
+  const last = letterToPair(ic[ic.length - 1]);
+  const middle = ic.slice(1, -1);
+  return first + middle + last;
+}
+
 export type DirectionSummary = { count: number; directions: string[] };
 
 export type Chart = {

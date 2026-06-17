@@ -8,9 +8,17 @@ const labelClass = "text-left text-sm font-medium text-zinc-700";
 export function InputSection({
   birthDate,
   onBirthDateChange,
+  phone,
+  onPhoneChange,
+  ic,
+  onIcChange,
 }: {
   birthDate: string;
   onBirthDateChange: (value: string) => void;
+  phone: string;
+  onPhoneChange: (value: string) => void;
+  ic: string;
+  onIcChange: (value: string) => void;
 }) {
   return (
     <Section title="核心资料">
@@ -31,8 +39,26 @@ export function InputSection({
           />
         </div>
         <div className={fieldClass}>
-          <label htmlFor="phoneNumber" className={labelClass}>手机号码</label>
-          <input id="phoneNumber" type="tel" suppressHydrationWarning className={inputClass} />
+          <label htmlFor="phoneNumber" className={labelClass}>电话号码</label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            value={phone}
+            onChange={(e) => onPhoneChange(e.target.value)}
+            suppressHydrationWarning
+            className={inputClass}
+          />
+        </div>
+        <div className={fieldClass}>
+          <label htmlFor="ic" className={labelClass}>身份证号码</label>
+          <input
+            id="ic"
+            type="text"
+            value={ic}
+            onChange={(e) => onIcChange(e.target.value)}
+            suppressHydrationWarning
+            className={inputClass}
+          />
         </div>
       </div>
     </Section>
