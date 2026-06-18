@@ -246,11 +246,11 @@ export function computeChart(birthDate: string): Chart {
 //   • middle[1]   →  middle[1]  + middle[1]   (the only single-digit story entry)
 // Returns [] until a birth date produces real numbers.
 export function blueprintNumbers(chart: Chart): string[] {
-  const { rootNumber, middle, uniqueStoryNumbers } = chart;
+  const { rootNumber, middle, storyNumbers } = chart;
   if (Number.isNaN(rootNumber)) return [];
   return [
     `${rootNumber}${middle[0]}`,
-    ...uniqueStoryNumbers.map((n) => (n.length === 1 ? `${n}${n}` : n)),
+    ...storyNumbers.map((n) => (n.length === 1 ? `${n}${n}` : n)),
   ];
 }
 
@@ -261,4 +261,57 @@ export function healthNumbers(chart: Chart): string[] {
   const { middle, rootNumber, belowLeft, belowRight } = chart;
   if (Number.isNaN(rootNumber)) return [];
   return [...middle, rootNumber, belowLeft, belowRight].map(String);
+}
+
+// Cumulative chart: sum each person's first row (reducedBirthDate) column-wise,
+// reduce to single digits, then derive the rest of the pyramid the same way
+// computeChart does. Charts without a birth date are ignored.
+export function cumulativeChart(charts: Chart[]): Chart {
+  const valid = charts.filter((c) => !Number.isNaN(c.reducedBirthDate[0]));
+  const reducedBirthDate =
+    valid.length === 0
+      ? [NaN, NaN, NaN, NaN]
+      : [0, 1, 2, 3].map((j) =>
+          reduceToSingle(valid.reduce((sum, c) => sum + c.reducedBirthDate[j], 0)),
+        );
+
+  const middle = [
+    reduceToSingle(reducedBirthDate[0] + reducedBirthDate[1]),
+    reduceToSingle(reducedBirthDate[2] + reducedBirthDate[3]),
+  ];
+  const rootNumber = reduceToSingle(middle[0] + middle[1]);
+  const belowRight = reduceToSingle(middle[0] + rootNumber);
+  const belowLeft = reduceToSingle(middle[1] + rootNumber);
+  const belowLast = reduceToSingle(belowLeft + belowRight);
+
+  const ls0 = reduceToSingle(reducedBirthDate[0] + middle[0]);
+  const ls1 = reduceToSingle(reducedBirthDate[1] + middle[0]);
+  const leftSide = [ls0, ls1, reduceToSingle(ls0 + ls1)];
+  const rs0 = reduceToSingle(reducedBirthDate[2] + middle[1]);
+  const rs1 = reduceToSingle(reducedBirthDate[3] + middle[1]);
+  const rightSide = [rs0, rs1, reduceToSingle(rs0 + rs1)];
+
+  return {
+    numbers: ["–", "–", "–", "–"],
+    reducedBirthDate,
+    middle,
+    rootNumber,
+    belowLeft,
+    belowRight,
+    belowLast,
+    leftSide,
+    rightSide,
+    storyNumbers: [],
+    uniqueStoryNumbers: [],
+    hiddenNumbers: [],
+    countMajorMinor: Array(9).fill(0),
+    countHealth: { gold: 0, water: 0, fire: 0, wood: 0, earth: 0 },
+    careerElement: "",
+    countDirections: {
+      wealth: { count: 0, directions: [] },
+      luck: { count: 0, directions: [] },
+      success: { count: 0, directions: [] },
+    },
+    directionValues: {},
+  };
 }

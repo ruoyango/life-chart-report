@@ -12,7 +12,9 @@ const textStyle = { fill: "var(--chart-text)" };
 const lineStyle = { stroke: "var(--chart-line)" };
 
 // The inverted-pyramid Life Chart diagram (the four date numbers + SVG).
-export function BaseChart({ chart }: { chart: Chart }) {
+// `topRows` overrides the single date-number row with multiple rows (used by the
+// cumulative chart to show each person's reducedBirthDate above the pyramid).
+export function BaseChart({ chart, topRows }: { chart: Chart; topRows?: number[][] }) {
   const {
     numbers,
     reducedBirthDate,
@@ -30,13 +32,27 @@ export function BaseChart({ chart }: { chart: Chart }) {
       {/* Four numbers from the birth date, equidistant above the diagram.
           Sized in cqw so they scale with the chart like the in-SVG numbers
           (SVG fontSize 30 / viewBox 800 = 3.75% of the container width). */}
-      <div className="-mb-3 flex justify-evenly">
-        {numbers.map((n, i) => (
-          <span key={i} className="text-[3.75cqw] font-semibold text-amber-800">
-            {n}
-          </span>
-        ))}
-      </div>
+      {topRows ? (
+        <div className="-mb-3 flex flex-col gap-0.5">
+          {topRows.map((row, r) => (
+            <div key={r} className="flex justify-evenly">
+              {row.map((n, i) => (
+                <span key={i} className="text-[3.75cqw] font-semibold text-amber-800">
+                  {show(n)}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="-mb-3 flex justify-evenly">
+          {numbers.map((n, i) => (
+            <span key={i} className="text-[3.75cqw] font-semibold text-amber-800">
+              {n}
+            </span>
+          ))}
+        </div>
+      )}
       <svg
         viewBox="0 0 800 720"
         className="w-full"

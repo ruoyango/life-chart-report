@@ -32,6 +32,14 @@ const PAGES = [
       { id: "sec-planets-phone", label: "电话号码八大行星" },
     ],
   },
+  {
+    href: "/heshu",
+    label: "合数",
+    sections: [
+      { id: "sec-heshu", label: "合数" },
+      { id: "sec-heshu-charts", label: "个人蓝图" },
+    ],
+  },
 ];
 
 export function SectionNav() {
