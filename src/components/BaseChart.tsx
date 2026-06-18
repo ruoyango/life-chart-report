@@ -14,7 +14,17 @@ const lineStyle = { stroke: "var(--chart-line)" };
 // The inverted-pyramid Life Chart diagram (the four date numbers + SVG).
 // `topRows` overrides the single date-number row with multiple rows (used by the
 // cumulative chart to show each person's reducedBirthDate above the pyramid).
-export function BaseChart({ chart, topRows }: { chart: Chart; topRows?: number[][] }) {
+// `hideTop` suppresses the number row entirely (used when the caller renders its
+// own custom rows above the pyramid).
+export function BaseChart({
+  chart,
+  topRows,
+  hideTop,
+}: {
+  chart: Chart;
+  topRows?: number[][];
+  hideTop?: boolean;
+}) {
   const {
     numbers,
     reducedBirthDate,
@@ -32,7 +42,7 @@ export function BaseChart({ chart, topRows }: { chart: Chart; topRows?: number[]
       {/* Four numbers from the birth date, equidistant above the diagram.
           Sized in cqw so they scale with the chart like the in-SVG numbers
           (SVG fontSize 30 / viewBox 800 = 3.75% of the container width). */}
-      {topRows ? (
+      {hideTop ? null : topRows ? (
         <div className="-mb-3 flex flex-col gap-0.5">
           {topRows.map((row, r) => (
             <div key={r} className="flex justify-evenly">

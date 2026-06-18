@@ -40,6 +40,14 @@ const PAGES = [
       { id: "sec-heshu-charts", label: "个人蓝图" },
     ],
   },
+  {
+    href: "/zeri",
+    label: "择日",
+    sections: [
+      { id: "sec-zeri", label: "择日" },
+      { id: "sec-zeri-combo", label: "择日组合" },
+    ],
+  },
 ];
 
 export function SectionNav() {

@@ -315,3 +315,39 @@ export function cumulativeChart(charts: Chart[]): Chart {
     directionValues: {},
   };
 }
+
+// Build a chart from just the two middle numbers — the rest of the pyramid from
+// the middle down (root + below-baseline) is derived as usual. The top tier
+// (reducedBirthDate) and side equations are left blank (NaN) to be filled later.
+// A null/empty middle yields the all-blank placeholder.
+export function chartFromMiddle(middle: readonly [number, number] | null | undefined): Chart {
+  if (!middle) return computeChart("");
+  const [m0, m1] = middle;
+  const rootNumber = reduceToSingle(m0 + m1);
+  const belowRight = reduceToSingle(m0 + rootNumber);
+  const belowLeft = reduceToSingle(m1 + rootNumber);
+  const belowLast = reduceToSingle(belowLeft + belowRight);
+  return {
+    numbers: ["–", "–", "–", "–"],
+    reducedBirthDate: [NaN, NaN, NaN, NaN],
+    middle: [m0, m1],
+    rootNumber,
+    belowLeft,
+    belowRight,
+    belowLast,
+    leftSide: [NaN, NaN, NaN],
+    rightSide: [NaN, NaN, NaN],
+    storyNumbers: [],
+    uniqueStoryNumbers: [],
+    hiddenNumbers: [],
+    countMajorMinor: Array(9).fill(0),
+    countHealth: { gold: 0, water: 0, fire: 0, wood: 0, earth: 0 },
+    careerElement: "",
+    countDirections: {
+      wealth: { count: 0, directions: [] },
+      luck: { count: 0, directions: [] },
+      success: { count: 0, directions: [] },
+    },
+    directionValues: {},
+  };
+}

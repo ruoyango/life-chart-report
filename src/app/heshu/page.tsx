@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState } from "react";
 import { Section } from "../../components/Section";
 import { BaseChart } from "../../components/BaseChart";
 import { computeChart, cumulativeChart } from "../../lib/numerology";
+import { usePersistedState } from "../../lib/usePersistedState";
 
 const inputClass =
   "w-full rounded-md border border-amber-200 px-3 py-2 text-zinc-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200";
@@ -11,16 +11,18 @@ const labelClass = "text-left text-sm font-medium text-zinc-700";
 
 // 合数 page — input section with a variable number of birth dates (starts with 2).
 export default function HeshuPage() {
-  const [dates, setDates] = useState([
+  const [dates, setDates] = usePersistedState("life-chart-heshu-dates", [
     { id: 0, value: "" },
     { id: 1, value: "" },
   ]);
-  const nextId = useRef(2);
 
   const update = (id: number, value: string) =>
     setDates((prev) => prev.map((d) => (d.id === id ? { ...d, value } : d)));
   const add = () =>
-    setDates((prev) => [...prev, { id: nextId.current++, value: "" }]);
+    setDates((prev) => [
+      ...prev,
+      { id: prev.reduce((max, d) => Math.max(max, d.id), -1) + 1, value: "" },
+    ]);
   const remove = (id: number) =>
     setDates((prev) => (prev.length > 1 ? prev.filter((d) => d.id !== id) : prev));
 
