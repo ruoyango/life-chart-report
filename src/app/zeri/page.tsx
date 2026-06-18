@@ -105,7 +105,7 @@ function YearCombo({ birthYear, addedYear }: { birthYear: string; addedYear: str
   return (
     <svg
       viewBox="0 0 240 320"
-      className="mx-auto w-full max-w-[208px] sm:-translate-x-[30%]"
+      className="mx-auto w-full max-w-[208px] lg:-translate-x-[30%]"
       fill="none"
       stroke="currentColor"
       style={{ color: "var(--chart-line)" }}
@@ -359,12 +359,12 @@ export default function ZeriPage() {
                 ) : (
                   <BaseChart chart={rightChartFull} hideTop />
                 )}
+                {hasVariants && (
+                  <p className="mt-2 text-center text-xs font-medium text-amber-700">
+                    点击图表切换（{(variant % options.length) + 1}/{options.length}）
+                  </p>
+                )}
               </div>
-              {hasVariants && (
-                <p className="mt-2 text-center text-xs font-medium text-amber-700">
-                  点击图表切换（{(variant % options.length) + 1}/{options.length}）
-                </p>
-              )}
             </div>
           </div>
 
