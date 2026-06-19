@@ -6,6 +6,30 @@ import { useAuth } from "./AuthProvider";
 const inputClass =
   "w-full rounded-md border border-amber-200 px-3 py-2 text-zinc-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200";
 
+// Lightweight password check for sign-up. Minimum bar: 8+ chars with at least a
+// letter and a number (kept deliberately gentle — Supabase's leaked-password
+// protection is the heavier server-side guard). `score` 0–4 drives the meter.
+function scorePassword(pw: string): { score: number; label: string; ok: boolean } {
+  const hasLower = /[a-z]/.test(pw);
+  const hasUpper = /[A-Z]/.test(pw);
+  const hasDigit = /\d/.test(pw);
+  const hasSymbol = /[^A-Za-z0-9]/.test(pw);
+  const classes = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length;
+  const ok = pw.length >= 8 && (hasLower || hasUpper) && hasDigit;
+
+  let score = 0;
+  if (pw.length > 0) {
+    if (!ok) score = 1; // too short, or missing a letter/number
+    else {
+      score = 2; // meets the bar
+      if (classes >= 3) score = 3;
+      if (classes >= 3 && pw.length >= 12) score = 4;
+    }
+  }
+  const label = score >= 4 ? "强" : score >= 2 ? "中" : "弱";
+  return { score, label, ok };
+}
+
 export function AuthModal() {
   const { modalOpen, closeModal, signIn, signUp, configured } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -14,6 +38,9 @@ export function AuthModal() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const strength = scorePassword(password);
+  const barColor = strength.score <= 1 ? "#dc2626" : strength.score <= 3 ? "#d97706" : "#16a34a";
 
   // Close on Escape.
   useEffect(() => {
@@ -41,6 +68,10 @@ export function AuthModal() {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    if (mode === "signup" && !scorePassword(password).ok) {
+      setError("密码强度不足：请使用至少 8 位，并包含字母和数字。");
+      return;
+    }
     setBusy(true);
     if (mode === "signin") {
       const { error } = await signIn(email, password);
@@ -111,11 +142,34 @@ export function AuthModal() {
                 type="password"
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 required
-                minLength={6}
+                minLength={mode === "signup" ? 8 : 6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={inputClass}
               />
+              {mode === "signup" && (
+                <>
+                  {password.length > 0 && (
+                    <div className="mt-1.5 flex gap-1" aria-hidden="true">
+                      {[1, 2, 3, 4].map((i) => (
+                        <span
+                          key={i}
+                          className="h-1.5 flex-1 rounded-full transition-colors"
+                          style={{ backgroundColor: i <= strength.score ? barColor : "#e4e4e7" }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <p
+                    className="mt-1 text-xs"
+                    style={{ color: password.length > 0 && !strength.ok ? "#dc2626" : "#71717a" }}
+                  >
+                    {password.length > 0 && strength.ok
+                      ? `密码强度：${strength.label}`
+                      : "密码至少 8 位，需包含字母和数字。"}
+                  </p>
+                </>
+              )}
             </div>
 
             {error && <p className="text-sm font-medium text-red-600">{error}</p>}
@@ -123,7 +177,7 @@ export function AuthModal() {
 
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || (mode === "signup" && !strength.ok)}
               className="mt-1 w-full rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60"
             >
               {busy ? "请稍候…" : mode === "signin" ? "登录" : "注册"}

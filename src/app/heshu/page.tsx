@@ -3,6 +3,7 @@
 import { Section } from "../../components/Section";
 import { BaseChart } from "../../components/BaseChart";
 import { DateInput } from "../../components/DateInput";
+import { PageGate } from "../../components/PageGate";
 import { computeChart, cumulativeChart } from "../../lib/numerology";
 import { usePersistedState } from "../../lib/usePersistedState";
 
@@ -34,7 +35,7 @@ export default function HeshuPage() {
   const enabledCharts = charts.filter((_, i) => dates[i].enabled !== false);
 
   return (
-    <>
+    <PageGate minLevel={1}>
     <div id="sec-heshu" className="w-full scroll-mt-24">
       <Section title="合数">
         <div className="mt-4 flex flex-col gap-3">
@@ -123,6 +124,6 @@ export default function HeshuPage() {
         </div>
       </Section>
     </div>
-    </>
+    </PageGate>
   );
 }

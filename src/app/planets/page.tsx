@@ -1,6 +1,7 @@
 'use client';
 
 import { useInput } from "../../components/InputProvider";
+import { PageGate } from "../../components/PageGate";
 import { InputSection } from "../../components/sections/InputSection";
 import {
   PlanetGroupSection,
@@ -58,7 +59,7 @@ export default function PlanetsPage() {
   const icNumber = icToNumber(ic);
 
   return (
-    <>
+    <PageGate minLevel={2}>
       {/* 1 — input (DOB + IC) */}
       <div id="sec-input" className="w-full scroll-mt-24">
         <InputSection
@@ -150,6 +151,6 @@ export default function PlanetsPage() {
           footer={<FiveElementAdditionDiagram title="五行加数" phone={phone} />}
         />
       </div>
-    </>
+    </PageGate>
   );
 }

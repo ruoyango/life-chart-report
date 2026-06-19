@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Section } from "../../components/Section";
 import { BaseChart } from "../../components/BaseChart";
 import { DateInput } from "../../components/DateInput";
+import { PageGate } from "../../components/PageGate";
 import { chartFromMiddle, reduceToSingle } from "../../lib/numerology";
 import { usePersistedState } from "../../lib/usePersistedState";
 
@@ -263,7 +264,7 @@ export default function ZeriPage() {
   };
 
   return (
-    <>
+    <PageGate minLevel={1}>
       <div id="sec-zeri" className="w-full scroll-mt-24">
         <Section title="择日">
           <div className="mt-4 flex flex-col gap-4 sm:flex-row">
@@ -388,6 +389,6 @@ export default function ZeriPage() {
           )}
         </Section>
       </div>
-    </>
+    </PageGate>
   );
 }
