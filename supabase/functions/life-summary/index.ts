@@ -5,14 +5,15 @@
 // Set the secret:      supabase secrets set GROQ_API_KEY=<your key>
 // Deploy:              supabase functions deploy life-summary
 //
-// Groq is OpenAI-compatible. To switch model/provider later, only this file
-// changes — the app calls the function by name and doesn't care what's behind it.
+// 总体故事 is a FREE feature: no login or subscription is required. The client
+// sends only the chart (the computed numbers); this function reads the source
+// interpretation lines itself with the service role (bypassing RLS), so the raw
+// detail lines stay gated while the synthesised summary is available to anyone.
+// SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected into Edge Functions
+// automatically — no manual secret needed for them.
 
 import { createClient } from "npm:@supabase/supabase-js@^2";
 
-// Free Groq model. To see what your key can use:
-//   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer <KEY>"
-// For stronger Chinese output, try a Qwen model from that list if available.
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT =
@@ -36,32 +37,168 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "content-type": "application/json" },
   });
 
+// ── Content assembly (mirrors src/lib/content.ts) ──────────────────────────
+// Kept in sync by hand: this is the Deno twin of buildContentData +
+// collectStorySources so the summary's source material matches the app.
+
+type Lookup = Record<string, string>;
+type ContentData = {
+  story: Lookup;
+  root: Lookup;
+  characteristics: Record<string, Lookup>;
+  majorminor: Record<string, Lookup>;
+  health: Lookup;
+  career: Lookup;
+};
+type ContentRow = { section: string; subtype: string; item_key: string; line: string };
+// deno-lint-ignore no-explicit-any
+type Chart = any;
+
+const HIDDEN_TYPE_MAP: Record<string, string> = {
+  Hidden: "hidden",
+  Parents: "parent",
+  Impression: "impression",
+  Subconscious: "subconscious",
+};
+const MAJORMINOR_TYPE_MAP: Record<string, string> = {
+  Many: "many",
+  Less: "less",
+  Perfect: "perfect",
+};
+const ELEMENT_LABEL: Record<string, string> = {
+  gold: "金",
+  wood: "木",
+  water: "水",
+  fire: "火",
+  earth: "土",
+};
+const CAREER_ORDER: Record<string, string[]> = {
+  gold: ["wood", "earth", "gold"],
+  water: ["fire", "gold", "water"],
+  wood: ["earth", "water", "wood"],
+  fire: ["gold", "wood", "fire"],
+  earth: ["water", "fire", "earth"],
+};
+
+function buildContentData(rows: ContentRow[]): ContentData {
+  const data: ContentData = {
+    story: {},
+    root: {},
+    characteristics: {},
+    majorminor: {},
+    health: {},
+    career: {},
+  };
+  for (const r of rows) {
+    switch (r.section) {
+      case "story":
+        data.story[r.item_key] = r.line;
+        break;
+      case "root":
+        data.root[r.item_key] = r.line;
+        break;
+      case "hidden": {
+        const k = HIDDEN_TYPE_MAP[r.subtype] ?? r.subtype.toLowerCase();
+        (data.characteristics[k] ??= {})[r.item_key] = r.line;
+        break;
+      }
+      case "majorminor": {
+        const k = MAJORMINOR_TYPE_MAP[r.subtype] ?? r.subtype.toLowerCase();
+        (data.majorminor[k] ??= {})[r.item_key] = r.line;
+        break;
+      }
+      case "health":
+        data.health[r.item_key] = r.line;
+        break;
+      case "career":
+        data.career[r.item_key] = r.line;
+        break;
+    }
+  }
+  return data;
+}
+
+function collectSource(data: ContentData, chart: Chart): string {
+  const tidy = (lines: string[]) => lines.map((l) => (l ?? "").trim()).filter(Boolean);
+
+  const story: string[] = [];
+  const rootLine = data.root[String(chart.rootNumber)] ?? "";
+  if (rootLine) story.push(`根数 ${chart.rootNumber}：${rootLine}`);
+  const counts = new Map<string, number>();
+  for (const n of chart.storyNumbers ?? []) counts.set(String(n), (counts.get(String(n)) ?? 0) + 1);
+  for (const num of chart.uniqueStoryNumbers ?? []) {
+    const line = data.story[String(num)] ?? "";
+    if (!line) continue;
+    const c = counts.get(String(num)) ?? 1;
+    story.push(c > 1 ? `${num}（出现 ${c} 次，性格更突出）：${line}` : `${num}：${line}`);
+  }
+
+  const hiddenSlots = [
+    { key: "hidden", label: "隐藏性格", index: 0 },
+    { key: "parent", label: "与父亲关系", index: 1 },
+    { key: "parent", label: "与母亲关系", index: 2 },
+    { key: "impression", label: "外表给人的感觉", index: 3 },
+    { key: "subconscious", label: "潜意识性格", index: 4 },
+  ];
+  const hidden = hiddenSlots.map((s) => {
+    const n = (chart.hiddenNumbers ?? [])[s.index];
+    const line = data.characteristics[s.key]?.[String(n)] ?? "";
+    return line ? `${s.label}（${n}）：${line}` : "";
+  });
+
+  const ability = (chart.countMajorMinor ?? []).map((count: number, i: number) => {
+    const key = count == 0 ? "less" : count >= 3 ? "many" : "perfect";
+    const line = data.majorminor[key]?.[String(i + 1)] ?? "";
+    return line ? `数字 ${i + 1}（出现 ${count} 次）：${line}` : "";
+  });
+
+  const health: string[] = [];
+  for (const [element, count] of Object.entries(chart.countHealth ?? {})) {
+    if (count === 1) continue; // balanced — no warning line
+    const line = data.health[element] ?? "";
+    if (line) health.push(`${ELEMENT_LABEL[element] ?? element}：${line}`);
+  }
+
+  const order = CAREER_ORDER[chart.careerElement] ?? [];
+  const career = order.map((el) => {
+    const line = data.career[el] ?? "";
+    return line ? `${ELEMENT_LABEL[el] ?? el}行：${line}` : "";
+  });
+
+  const groups = [
+    { title: "数字故事", lines: tidy(story) },
+    { title: "隐藏性格", lines: tidy(hidden) },
+    { title: "能力分布", lines: tidy(ability) },
+    { title: "健康关系", lines: tidy(health) },
+    { title: "事业和职业选择", lines: tidy(career) },
+  ];
+
+  return groups
+    .filter((g) => g.lines.length)
+    .map((g) => `【${g.title}】\n${g.lines.join("\n")}`)
+    .join("\n\n");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    // Require a logged-in Supabase user (stops an anonymous endpoint from being
-    // hammered). supabase-js attaches the user's JWT automatically when calling.
-    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+    const { chart } = (await req.json()) as { chart?: Chart };
+    if (!chart) return json({ error: "缺少命盘数据。" }, 400);
+
+    // Read the source lines server-side with the service role (bypasses RLS), so
+    // free/anonymous users can get a summary without ever receiving the raw lines.
     const supa = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const {
-      data: { user },
-    } = await supa.auth.getUser(token);
-    if (!user) return json({ error: "未授权，请先登录。" }, 401);
+    const { data: rows, error: dbError } = await supa
+      .from("content")
+      .select("section,subtype,item_key,line");
+    if (dbError) return json({ error: "内容读取失败。" }, 500);
 
-    const { sections } = (await req.json()) as {
-      sections?: { title: string; lines: string[] }[];
-    };
-
-    const source = (sections ?? [])
-      .filter((s) => s.lines?.length)
-      .map((s) => `【${s.title}】\n${s.lines.join("\n")}`)
-      .join("\n\n");
-
+    const source = collectSource(buildContentData((rows ?? []) as ContentRow[]), chart);
     if (!source.trim()) return json({ error: "没有可用的内容。" }, 400);
 
     const apiKey = Deno.env.get("GROQ_API_KEY");

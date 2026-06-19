@@ -1,22 +1,32 @@
+'use client';
+
 import { Section, EmptyHint } from "../Section";
 import { type Chart } from "../../lib/numerology";
-import { ELEMENT_META, getHealthLine, getHealthStatus } from "../../lib/content";
+import { ELEMENT_META, getHealthStatus } from "../../lib/content";
+import { useContent } from "../ContentProvider";
+import { useGate, LockedShell, LOCKED_LINE } from "../Gate";
+
+// When locked, the status chip always shows the green "balanced" state.
+const LOCKED_STATUS = { label: "平衡", color: "#16a34a", bg: "#dcfce7", warn: false };
 
 export function HealthSection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
   const { countHealth } = chart;
+  const { getHealthLine } = useContent();
+  const { locked } = useGate(1);
   return (
     <Section title="健康关系">
       {birthDate ? (
-        <>
+        <LockedShell locked={locked}>
           <p className="-mt-2 mb-4 text-sm leading-relaxed text-zinc-500">
             根据五行分布评估健康倾向，
             <span className="font-medium text-amber-700">失衡</span>
             （缺少或偏多）的元素需多加注意。
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {Object.entries(countHealth).map(([element, count]) => {
+            {Object.entries(countHealth).map(([element, realCount]) => {
               const meta = ELEMENT_META[element];
-              const status = getHealthStatus(count);
+              const count = locked ? 0 : realCount;
+              const status = locked ? LOCKED_STATUS : getHealthStatus(realCount);
               return (
                 <div
                   key={element}
@@ -39,9 +49,13 @@ export function HealthSection({ birthDate, chart }: { birthDate: string; chart: 
                       {status.label} · {count}次
                     </span>
                   </div>
-                  {status.warn ? (
+                  {locked ? (
                     <p className="mt-3 whitespace-pre-line leading-relaxed text-zinc-700">
-                      {getHealthLine(element, count) || "此元素失衡，建议多加注意。"}
+                      {LOCKED_LINE}
+                    </p>
+                  ) : status.warn ? (
+                    <p className="mt-3 whitespace-pre-line leading-relaxed text-zinc-700">
+                      {getHealthLine(element, realCount) || "此元素失衡，建议多加注意。"}
                     </p>
                   ) : (
                     <p className="mt-3 text-sm text-zinc-500">状态良好，无需特别注意。</p>
@@ -50,7 +64,7 @@ export function HealthSection({ birthDate, chart }: { birthDate: string; chart: 
               );
             })}
           </div>
-        </>
+        </LockedShell>
       ) : (
         <EmptyHint />
       )}

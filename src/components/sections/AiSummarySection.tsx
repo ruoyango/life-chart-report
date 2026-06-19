@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { Section, EmptyHint } from "../Section";
 import { type Chart } from "../../lib/numerology";
-import { collectStorySources } from "../../lib/content";
 import { supabase } from "../../lib/supabase";
-import { useAuth } from "../AuthProvider";
 
 const cardClass = "subcard rounded-xl border border-amber-100 bg-amber-50/60 p-5";
 const bodyClass = "whitespace-pre-line leading-relaxed text-zinc-700";
@@ -13,7 +11,6 @@ const btnClass =
   "rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60";
 
 export function AiSummarySection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
-  const { user } = useAuth();
   const [story, setStory] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +30,13 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
     setBusy(true);
     setError(null);
     try {
-      // Gather the personalised lines from the five source sections and hand
-      // them to the Edge Function, which calls Claude server-side.
-      const sections = collectStorySources(chart);
+      // Send only the chart (the computed numbers). The Edge Function reads the
+      // source interpretation lines itself with the service role — so the AI works
+      // for everyone (no login, no subscription needed) while the raw detail lines
+      // stay gated by RLS.
       const { data, error: fnError } = await supabase.functions.invoke<{ text: string }>(
         "life-summary",
-        { body: { sections } },
+        { body: { chart } },
       );
       if (fnError) throw fnError;
       setStory(data?.text ?? "");
@@ -65,9 +63,7 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
     <Section title="总体故事">
       {birthDate ? (
         <div className="mt-4 flex flex-col gap-4">
-          {!user ? (
-            <p className="leading-relaxed text-zinc-500">请先登录以生成您的总体故事。</p>
-          ) : story ? (
+          {story ? (
             <div className={cardClass}>
               <p className={bodyClass}>{story}</p>
               <button type="button" onClick={generate} disabled={busy} className={`mt-4 ${btnClass}`}>

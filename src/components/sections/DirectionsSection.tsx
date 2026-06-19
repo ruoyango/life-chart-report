@@ -1,10 +1,14 @@
+'use client';
+
 import { Section, EmptyHint } from "../Section";
 import { BoxHeader } from "../BoxHeader";
 import { DirectionCompass } from "../DirectionCompass";
 import { type Chart } from "../../lib/numerology";
+import { useGate, LockedShell } from "../Gate";
 
 export function DirectionsSection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
   const { countDirections, directionValues } = chart;
+  const { locked } = useGate(1);
   const cards = [
     { label: "财富方向", number: 6, color: "#d97706", data: countDirections.wealth },
     { label: "幸运方向", number: 7, color: "#16a34a", data: countDirections.luck },
@@ -13,33 +17,41 @@ export function DirectionsSection({ birthDate, chart }: { birthDate: string; cha
   return (
     <Section title="最好方向">
       {birthDate ? (
-        <div className="mt-4 flex flex-col gap-6 lg:flex-row print:flex-row">
-          <div className="flex justify-center lg:w-1/3 lg:shrink-0 lg:justify-start print:w-1/3 print:shrink-0 print:justify-start">
-            <DirectionCompass values={directionValues} />
+        <LockedShell locked={locked}>
+          <div className="mt-4 flex flex-col gap-6 lg:flex-row print:flex-row">
+            <div className="flex justify-center lg:w-1/3 lg:shrink-0 lg:justify-start print:w-1/3 print:shrink-0 print:justify-start">
+              {locked ? (
+                <div className="flex h-48 w-48 items-center justify-center rounded-full border-2 border-dashed border-amber-200 text-sm text-zinc-400">
+                  登录后查看
+                </div>
+              ) : (
+                <DirectionCompass values={directionValues} />
+              )}
+            </div>
+            <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
+              {cards.map(({ label, number, color, data }) => (
+                <div
+                  key={label}
+                  className="subcard rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50"
+                  style={{ borderLeftColor: color }}
+                >
+                  <BoxHeader badge={locked ? 0 : number} title={label} accentColor={color} />
+                  <p className="mt-2 leading-relaxed text-zinc-500">
+                    数量：{locked ? 0 : data.count}
+                    {!locked && data.count > 0 && (
+                      <>
+                        ｜方向：
+                        <span className="font-semibold" style={{ color }}>
+                          {data.directions.join("、")}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
-            {cards.map(({ label, number, color, data }) => (
-              <div
-                key={label}
-                className="subcard rounded-xl border border-l-4 border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50"
-                style={{ borderLeftColor: color }}
-              >
-                <BoxHeader badge={number} title={label} accentColor={color} />
-                <p className="mt-2 leading-relaxed text-zinc-500">
-                  数量：{data.count}
-                  {data.count > 0 && (
-                    <>
-                      ｜方向：
-                      <span className="font-semibold" style={{ color }}>
-                        {data.directions.join("、")}
-                      </span>
-                    </>
-                  )}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        </LockedShell>
       ) : (
         <EmptyHint />
       )}

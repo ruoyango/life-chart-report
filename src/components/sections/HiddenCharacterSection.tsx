@@ -1,7 +1,10 @@
+'use client';
+
 import { Section, EmptyHint } from "../Section";
 import { BoxHeader } from "../BoxHeader";
 import { type Chart } from "../../lib/numerology";
-import { getCharacteristicsLine } from "../../lib/content";
+import { useContent } from "../ContentProvider";
+import { useGate, LockedShell, LOCKED_LINE } from "../Gate";
 
 const cardClass =
   "subcard rounded-xl border border-amber-100 bg-amber-50/60 p-4 transition hover:bg-amber-50";
@@ -19,19 +22,26 @@ const SLOTS: { key: string; lineKey: string; title: string; index: number }[] = 
 
 export function HiddenCharacterSection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
   const { hiddenNumbers } = chart;
+  const { getCharacteristicsLine } = useContent();
+  const { locked } = useGate(1);
   return (
     <Section title="隐藏性格">
       {birthDate ? (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {SLOTS.map((slot) => (
-            <div key={slot.key} className={cardClass}>
-              <BoxHeader badge={hiddenNumbers[slot.index]} title={slot.title} />
-              <p className={bodyClass}>
-                {getCharacteristicsLine(slot.lineKey, hiddenNumbers[slot.index]) || fallback}
-              </p>
-            </div>
-          ))}
-        </div>
+        <LockedShell locked={locked}>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {SLOTS.map((slot) => {
+              const num = hiddenNumbers[slot.index];
+              return (
+                <div key={slot.key} className={cardClass}>
+                  <BoxHeader badge={locked ? 0 : num} title={slot.title} />
+                  <p className={bodyClass}>
+                    {locked ? LOCKED_LINE : getCharacteristicsLine(slot.lineKey, num) || fallback}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </LockedShell>
       ) : (
         <EmptyHint />
       )}

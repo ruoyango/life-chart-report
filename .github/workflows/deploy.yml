@@ -33,9 +33,13 @@ jobs:
 
       - run: npm ci                          # clean install from package-lock.json
 
-      - name: Generate data from Google Sheet
+      - name: Sync sheet content into Supabase
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          # Push the premium lines into the RLS-gated `content` table. The
+          # service-role key bypasses RLS and must stay server-side (CI only).
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/fetch-sheet.mjs
 
       - name: Build static site

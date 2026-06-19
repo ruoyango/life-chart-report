@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
+import { AccessProvider } from "../components/AccessProvider";
+import { ContentProvider } from "../components/ContentProvider";
 import { InputProvider } from "../components/InputProvider";
 import { AppShell } from "../components/AppShell";
 
@@ -50,9 +52,13 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          <InputProvider>
-            <AppShell>{children}</AppShell>
-          </InputProvider>
+          <AccessProvider>
+            <ContentProvider>
+              <InputProvider>
+                <AppShell>{children}</AppShell>
+              </InputProvider>
+            </ContentProvider>
+          </AccessProvider>
         </AuthProvider>
       </body>
     </html>

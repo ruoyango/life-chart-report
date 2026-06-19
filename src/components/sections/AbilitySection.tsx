@@ -1,21 +1,32 @@
+'use client';
+
 import { Section, EmptyHint } from "../Section";
 import { type Chart } from "../../lib/numerology";
-import { getAbilityStatus, getMajorMinorLine } from "../../lib/content";
+import { getAbilityStatus } from "../../lib/content";
+import { useContent } from "../ContentProvider";
+import { useGate, LockedShell, LOCKED_LINE } from "../Gate";
+
+// When locked, the status chip always shows the green "balanced" state so the
+// real ability balance can't be read from the DOM.
+const LOCKED_STATUS = { label: "刚刚好", color: "#16a34a", bg: "#dcfce7" };
 
 export function AbilitySection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
   const { countMajorMinor } = chart;
+  const { getMajorMinorLine } = useContent();
+  const { locked } = useGate(1);
   return (
     <Section title="能力分布">
       {birthDate ? (
-        <>
+        <LockedShell locked={locked}>
           <p className="-mt-2 mb-4 text-sm leading-relaxed text-zinc-500">
             数字 1–9 各代表一种能力，出现的次数反映其强弱：
             <span className="font-medium text-amber-700">缺少</span>、刚刚好或
             <span className="font-medium text-amber-700">偏多</span>。
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {countMajorMinor.map((count, index) => {
-              const status = getAbilityStatus(count);
+            {countMajorMinor.map((realCount, index) => {
+              const count = locked ? 0 : realCount;
+              const status = locked ? LOCKED_STATUS : getAbilityStatus(realCount);
               return (
                 <div
                   key={index + 1}
@@ -36,13 +47,13 @@ export function AbilitySection({ birthDate, chart }: { birthDate: string; chart:
                     </span>
                   </div>
                   <p className="mt-3 whitespace-pre-line leading-relaxed text-zinc-700">
-                    {getMajorMinorLine(index, count)}
+                    {locked ? LOCKED_LINE : getMajorMinorLine(index, realCount)}
                   </p>
                 </div>
               );
             })}
           </div>
-        </>
+        </LockedShell>
       ) : (
         <EmptyHint />
       )}

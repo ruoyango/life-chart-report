@@ -1,48 +1,88 @@
-import sheet from "../data/sheet.json";
 import type { Chart } from "./numerology";
 
-// number/element -> line, from a flat [{number|element, line|body|careers}] array.
-function byKey<T extends Record<string, string>>(
-  rows: T[],
-  keyField: keyof T,
-  valueField: keyof T,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const row of rows) out[row[keyField]] = row[valueField];
-  return out;
-}
+// ── Content data (fetched at runtime from Supabase) ─────────────────────────
 
-// Type -> (number -> line), grouping a [{Type, Number, Line}] array. The Type
-// is lower-cased and mapped onto the keys the sections already use.
-function byTypeNumber<T extends { Type: string; Number: string; Line: string }>(
-  rows: T[],
-  typeMap: Record<string, string>,
-): Record<string, Record<string, string>> {
-  const out: Record<string, Record<string, string>> = {};
-  for (const row of rows) {
-    const key = typeMap[row.Type] ?? row.Type.toLowerCase();
-    (out[key] ??= {})[row.Number] = row.Line;
-  }
-  return out;
-}
+type Lookup = Record<string, string>;
 
-const storylines = byKey(sheet.Story, "number", "line");
-const rootLines = byKey(sheet.Root, "number", "line");
-const characteristicsLines = byTypeNumber(sheet.Hidden, {
+export type ContentData = {
+  story: Lookup; // story number  -> line
+  root: Lookup; // root number   -> line
+  characteristics: Record<string, Lookup>; // hidden|parent|impression|subconscious -> (number -> line)
+  majorminor: Record<string, Lookup>; // many|less|perfect -> (number -> line)
+  health: Lookup; // element -> line
+  career: Lookup; // element -> line
+};
+
+export const EMPTY_CONTENT: ContentData = {
+  story: {},
+  root: {},
+  characteristics: {},
+  majorminor: {},
+  health: {},
+  career: {},
+};
+
+// One row as returned by the Supabase `content` table.
+export type ContentRow = {
+  section: string;
+  subtype: string;
+  item_key: string;
+  line: string;
+};
+
+// The sheet's raw `Type` values map onto the keys the sections already use.
+const HIDDEN_TYPE_MAP: Record<string, string> = {
   Hidden: "hidden",
   Parents: "parent",
   Impression: "impression",
   Subconscious: "subconscious",
-});
-const majorminorLines = byTypeNumber(sheet.MajorMinor, {
+};
+const MAJORMINOR_TYPE_MAP: Record<string, string> = {
   Many: "many",
   Less: "less",
   Perfect: "perfect",
-});
-const healthLines = byKey(sheet.Health, "element", "body");
-const careerLines = byKey(sheet.Career, "element", "careers");
+};
 
-// ── Metadata ──────────────────────────────────────────────────────────────
+// Turn the flat rows from Supabase into the nested lookups the getters expect.
+export function buildContentData(rows: ContentRow[]): ContentData {
+  const data: ContentData = {
+    story: {},
+    root: {},
+    characteristics: {},
+    majorminor: {},
+    health: {},
+    career: {},
+  };
+  for (const r of rows) {
+    switch (r.section) {
+      case "story":
+        data.story[r.item_key] = r.line;
+        break;
+      case "root":
+        data.root[r.item_key] = r.line;
+        break;
+      case "hidden": {
+        const key = HIDDEN_TYPE_MAP[r.subtype] ?? r.subtype.toLowerCase();
+        (data.characteristics[key] ??= {})[r.item_key] = r.line;
+        break;
+      }
+      case "majorminor": {
+        const key = MAJORMINOR_TYPE_MAP[r.subtype] ?? r.subtype.toLowerCase();
+        (data.majorminor[key] ??= {})[r.item_key] = r.line;
+        break;
+      }
+      case "health":
+        data.health[r.item_key] = r.line;
+        break;
+      case "career":
+        data.career[r.item_key] = r.line;
+        break;
+    }
+  }
+  return data;
+}
+
+// ── Metadata (static — not premium) ─────────────────────────────────────────
 
 export const DIRECTION_CATEGORIES: { key: "wealth" | "luck" | "success"; label: string; color: string }[] = [
   { key: "wealth", label: "财富", color: "#d97706" },
@@ -80,7 +120,7 @@ export const CAREER_ORDER: Record<string, string[]> = {
 // Rank labels for the three career recommendations.
 export const CAREER_RANKS = ["首选", "次选", "第三选择"];
 
-// ── Status helpers ──────────────────────────────────────────────────────────
+// ── Status helpers (static) ─────────────────────────────────────────────────
 
 // Balance status for an ability count (0 = lacking, 1-2 = just right, ≥3 = excess).
 export function getAbilityStatus(count: number) {
@@ -96,24 +136,18 @@ export function getHealthStatus(count: number) {
   return { label: "偏多", color: "#d97706", bg: "#fef3c7", warn: true };
 }
 
-// ── Line getters ─────────────────────────────────────────────────────────────
+// ── Line getters (read the fetched ContentData) ─────────────────────────────
 
 export function getSummaryLine() {
   return "";
 }
 
-export function getRootLine(num: string | number) {
-  const raw = rootLines[num];
-  if (Array.isArray(raw)) return raw.join("\n");
-  return raw ?? "";
+export function getRootLine(data: ContentData, num: string | number) {
+  return data.root[String(num)] ?? "";
 }
 
-// Story lines may be a single string or an array of lines — normalize to one
-// string with newline separators (rendered via `whitespace-pre-line`).
-export function getStoryLine(num: string) {
-  const raw = storylines[num];
-  if (Array.isArray(raw)) return raw.join("\n");
-  return raw ?? "";
+export function getStoryLine(data: ContentData, num: string | number) {
+  return data.story[String(num)] ?? "";
 }
 
 const storyTitles: Record<string, string> = {
@@ -135,54 +169,44 @@ export function getStoryTitles(num: string) {
   return words.length ? `${words.join("；")}` : "";
 }
 
-export function getCharacteristicsLine(key: string, num: string | number) {
-  const raw = characteristicsLines[key]?.[num];
-  if (Array.isArray(raw)) return raw.join("\n");
-  return raw ?? "";
+export function getCharacteristicsLine(data: ContentData, key: string, num: string | number) {
+  return data.characteristics[key]?.[String(num)] ?? "";
 }
 
-export function getMajorMinorLine(index: number, num: number) {
+export function getMajorMinorLine(data: ContentData, index: number, num: number) {
   const key = num == 0 ? "less" : num >= 3 ? "many" : "perfect";
-  const raw = majorminorLines[key]?.[index + 1];
-  if (Array.isArray(raw)) return raw.join("\n");
-  return raw ?? "";
+  return data.majorminor[key]?.[String(index + 1)] ?? "";
 }
 
-export function getHealthLine(element: string, count: number) {
+export function getHealthLine(data: ContentData, element: string, count: number) {
   if (count == 1) return "";
-  const raw = healthLines[element];
-  if (Array.isArray(raw)) return raw.join("\n");
-  return raw ?? "";
+  return data.health[element] ?? "";
 }
 
-export function getCareerPlan(element: string) {
+export function getCareerPlan(data: ContentData, element: string) {
   const order = CAREER_ORDER[element] ?? [];
-  return order.map((el) => {
-    const raw = careerLines[el];
-    const line = Array.isArray(raw) ? raw.join("\n") : raw ?? "";
-    return { element: el, line };
-  });
+  return order.map((el) => ({ element: el, line: data.career[el] ?? "" }));
 }
 
-// ── AI summary source material ────────────────────────────────────────────────
+// ── AI summary source material ──────────────────────────────────────────────
 
 export type StorySource = { title: string; lines: string[] };
 
 // Collect the personalised lines the five source sections display for this
 // chart — the raw material the AI synthesises into the 总体故事 section.
-export function collectStorySources(chart: Chart): StorySource[] {
+export function collectStorySources(data: ContentData, chart: Chart): StorySource[] {
   const tidy = (lines: string[]) => lines.map((l) => l.trim()).filter(Boolean);
 
   // 数字故事 — root number line + each story-number line. Duplicate story
   // numbers aren't repeated as text, but their occurrence count is annotated so
   // the AI can emphasise stronger (more frequent) traits.
   const story: string[] = [];
-  const rootLine = getRootLine(chart.rootNumber);
+  const rootLine = getRootLine(data, chart.rootNumber);
   if (rootLine) story.push(`根数 ${chart.rootNumber}：${rootLine}`);
   const storyCounts = new Map<string, number>();
   for (const n of chart.storyNumbers) storyCounts.set(n, (storyCounts.get(n) ?? 0) + 1);
   for (const num of chart.uniqueStoryNumbers) {
-    const line = getStoryLine(num);
+    const line = getStoryLine(data, num);
     if (!line) continue;
     const count = storyCounts.get(num) ?? 1;
     story.push(
@@ -200,13 +224,13 @@ export function collectStorySources(chart: Chart): StorySource[] {
   ];
   const hidden = hiddenSlots.map((s) => {
     const n = chart.hiddenNumbers[s.index];
-    const line = getCharacteristicsLine(s.key, n);
+    const line = getCharacteristicsLine(data, s.key, n);
     return line ? `${s.label}（${n}）：${line}` : "";
   });
 
   // 能力分布 — the 1-9 ability lines.
   const ability = chart.countMajorMinor.map((count, i) => {
-    const line = getMajorMinorLine(i, count);
+    const line = getMajorMinorLine(data, i, count);
     return line ? `数字 ${i + 1}（出现 ${count} 次）：${line}` : "";
   });
 
@@ -214,12 +238,12 @@ export function collectStorySources(chart: Chart): StorySource[] {
   const health: string[] = [];
   for (const [element, count] of Object.entries(chart.countHealth)) {
     if (!getHealthStatus(count).warn) continue;
-    const line = getHealthLine(element, count);
+    const line = getHealthLine(data, element, count);
     if (line) health.push(`${ELEMENT_META[element]?.label ?? element}：${line}`);
   }
 
   // 事业和职业选择 — the ranked career recommendations.
-  const career = getCareerPlan(chart.careerElement).map(({ element, line }) =>
+  const career = getCareerPlan(data, chart.careerElement).map(({ element, line }) =>
     line ? `${ELEMENT_META[element]?.label ?? element}行：${line}` : "",
   );
 

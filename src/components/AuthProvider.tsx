@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
@@ -12,7 +13,7 @@ type AuthContextValue = {
   // Login modal open/close state lives here so the nav button and the modal
   // can share it.
   modalOpen: boolean;
-  openModal: () => void;
+  openModal: (redirect?: string) => void;
   closeModal: () => void;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
@@ -29,6 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+  // Where to send the user after a successful login — set when a "Subscribe"
+  // button opens the modal for a logged-out user. Overwritten on every openModal
+  // call (a plain login passes none), so it can't fire a stale redirect.
+  const postAuthRedirect = useRef<string | null>(null);
 
   // Load the current session and keep it in sync with auth events.
   useEffect(() => {
@@ -41,12 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
+      // After a fresh login triggered by a "Subscribe" button, jump to where the
+      // user was headed (the pricing page).
+      if (event === "SIGNED_IN" && postAuthRedirect.current) {
+        const dest = postAuthRedirect.current;
+        postAuthRedirect.current = null;
+        router.push(dest);
+      }
     });
     return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const signIn = async (email: string, password: string) => {
     if (!supabase) return { error: "认证服务尚未配置。" };
@@ -86,7 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         configured: isSupabaseConfigured,
         modalOpen,
-        openModal: () => setModalOpen(true),
+        openModal: (redirect?: string) => {
+          postAuthRedirect.current = redirect ?? null;
+          setModalOpen(true);
+        },
         closeModal: () => setModalOpen(false),
         signIn,
         signUp,
