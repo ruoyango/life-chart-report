@@ -1,12 +1,35 @@
 'use client';
 
+import { useEffect, useState } from "react";
 import { useAuth } from "../../components/AuthProvider";
 import { useAccessLevel } from "../../components/AccessProvider";
+import { useBilling } from "../../components/useBilling";
 import { TIERS } from "../../lib/tiers";
+
+const primaryBtn =
+  "w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60";
+const disabledBtn = "w-full rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-400";
 
 export default function SubscriptionPage() {
   const { user, openModal } = useAuth();
-  const { level, loading } = useAccessLevel();
+  const { level, loading, refresh } = useAccessLevel();
+  const { busy, error, startCheckout, openPortal } = useBilling();
+  const [notice, setNotice] = useState<"success" | "cancelled" | null>(null);
+
+  // Returning from Stripe Checkout. On success the webhook may lag a moment, so
+  // re-check the tier a couple of times.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("checkout");
+    if (p === "success" || p === "cancelled") setNotice(p);
+    if (p === "success") {
+      const t1 = setTimeout(refresh, 1500);
+      const t2 = setTimeout(refresh, 4000);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [refresh]);
 
   return (
     <div className="w-full">
@@ -27,6 +50,22 @@ export default function SubscriptionPage() {
           </p>
         )}
       </div>
+
+      {notice === "success" && (
+        <p className="mx-auto mb-6 max-w-md rounded-lg bg-green-50 px-4 py-3 text-center text-sm font-medium text-green-700">
+          订阅成功！正在更新您的方案…
+        </p>
+      )}
+      {notice === "cancelled" && (
+        <p className="mx-auto mb-6 max-w-md rounded-lg bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-700">
+          已取消结账。
+        </p>
+      )}
+      {error && (
+        <p className="mx-auto mb-6 max-w-md rounded-lg bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {TIERS.map((tier) => {
@@ -63,19 +102,11 @@ export default function SubscriptionPage() {
               <div className="mt-6">
                 {!user ? (
                   tier.level === 0 ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-400"
-                    >
+                    <button type="button" disabled className={disabledBtn}>
                       免费方案
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => openModal("/subscription")}
-                      className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
-                    >
+                    <button type="button" onClick={() => openModal("/subscription")} className={primaryBtn}>
                       登录后订阅
                     </button>
                   )
@@ -88,31 +119,33 @@ export default function SubscriptionPage() {
                     当前方案
                   </button>
                 ) : tier.level > level ? (
+                  // New subscription goes through Checkout; an existing subscriber
+                  // upgrades through the Customer Portal.
                   <button
                     type="button"
-                    // TODO (Phase 4): start Stripe checkout for this tier.
-                    onClick={() => {}}
-                    className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+                    disabled={busy}
+                    onClick={() => (level === 0 ? startCheckout(tier.level) : openPortal())}
+                    className={primaryBtn}
                   >
-                    {level === 0 ? "订阅" : "升级"}
+                    {busy ? "处理中…" : level === 0 ? "订阅" : "升级"}
                   </button>
                 ) : tier.level === 0 ? (
                   <button
                     type="button"
-                    // TODO (Phase 4): cancel via the Stripe customer portal.
-                    onClick={() => {}}
-                    className="w-full rounded-lg border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    disabled={busy}
+                    onClick={openPortal}
+                    className="w-full rounded-lg border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                   >
-                    取消订阅
+                    {busy ? "处理中…" : "取消订阅"}
                   </button>
                 ) : (
                   <button
                     type="button"
-                    // TODO (Phase 4): downgrade via the Stripe customer portal.
-                    onClick={() => {}}
-                    className="w-full rounded-lg border border-amber-300 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                    disabled={busy}
+                    onClick={openPortal}
+                    className="w-full rounded-lg border border-amber-300 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
                   >
-                    降级到{tier.name}
+                    {busy ? "处理中…" : `降级到${tier.name}`}
                   </button>
                 )}
               </div>
@@ -122,7 +155,7 @@ export default function SubscriptionPage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-zinc-400">
-        订阅变更（订阅 · 升级 · 降级 · 取消）即将开放，将通过 Stripe 安全处理。
+        付款由 Stripe 安全处理。订阅后可随时升级、降级或取消。
       </p>
     </div>
   );

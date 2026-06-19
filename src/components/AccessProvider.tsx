@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthProvider";
 
@@ -41,8 +41,10 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id, nonce]);
 
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
   return (
-    <AccessContext.Provider value={{ level, loading, refresh: () => setNonce((n) => n + 1) }}>
+    <AccessContext.Provider value={{ level, loading, refresh }}>
       {children}
     </AccessContext.Provider>
   );
