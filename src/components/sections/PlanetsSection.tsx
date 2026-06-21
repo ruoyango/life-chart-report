@@ -4,16 +4,18 @@ import { pairToPlanet, PLANETS_ORDER } from "../../lib/planets";
 import { adjacentPairs, reduceToSingle } from "../../lib/numerology";
 import { digitToElement } from "../../lib/elements";
 
-// 序号 | 组合 | 星属 table for a list of 2-digit numbers.
-function PairTable({ title, rows }: { title?: string; rows: string[] }) {
+// 序号 | 组合 | [年龄] | 星属 table for a list of 2-digit numbers. When `ages` is
+// given, a fixed 年龄 column is inserted after 组合 (row i → ages[i]).
+function PairTable({ title, rows, ages }: { title?: string; rows: string[]; ages?: string[] }) {
   return (
     <div className="subcard rounded-xl border border-amber-100 bg-amber-50/60 p-4">
       {title && <h3 className="mb-3 text-base font-semibold text-amber-900">{title}</h3>}
-      <table className="w-full text-sm">
+      <table className={`w-full text-sm ${ages ? "table-fixed" : ""}`}>
         <thead>
           <tr className="border-b border-amber-200 text-zinc-500">
             <th className="pb-2 text-left font-medium">序号</th>
             <th className="pb-2 text-left font-medium">组合</th>
+            {ages && <th className="pb-2 text-left font-medium">年龄</th>}
             <th className="pb-2 text-right font-medium">星属</th>
           </tr>
         </thead>
@@ -22,6 +24,7 @@ function PairTable({ title, rows }: { title?: string; rows: string[] }) {
             <tr key={i} className="border-b border-amber-100/70">
               <td className="py-1.5 tabular-nums text-zinc-500">{i + 1}</td>
               <td className="py-1.5 font-mono tabular-nums text-zinc-700">{pair}</td>
+              {ages && <td className="py-1.5 tabular-nums text-zinc-600">{ages[i] ?? "–"}</td>}
               <td className="py-1.5 text-right font-medium text-amber-800">
                 {pairToPlanet(pair)}
               </td>
@@ -29,7 +32,7 @@ function PairTable({ title, rows }: { title?: string; rows: string[] }) {
           ))}
           {rows.length === 0 && (
             <tr className="border-b border-amber-100/70">
-              <td className="py-1.5 text-zinc-400" colSpan={3}>
+              <td className="py-1.5 text-zinc-400" colSpan={ages ? 4 : 3}>
                 （请先输入）
               </td>
             </tr>
@@ -109,6 +112,7 @@ export function PlanetGroupSection({
   top,
   left,
   rows,
+  ages,
   countLabel,
   tableTitle,
   tallyTitle,
@@ -119,6 +123,7 @@ export function PlanetGroupSection({
   top?: ReactNode;
   left?: ReactNode;
   rows: string[];
+  ages?: string[];
   countLabel: string;
   tableTitle?: string;
   tallyTitle?: string;
@@ -136,7 +141,7 @@ export function PlanetGroupSection({
         }`}
       >
         {left && <div className="flex flex-col">{left}</div>}
-        <PairTable title={tableTitle} rows={rows} />
+        <PairTable title={tableTitle} rows={rows} ages={ages} />
         <CountTable title={tallyTitle} rows={rows} countLabel={countLabel} />
       </div>
       {footer}

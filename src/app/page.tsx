@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from "react";
 import { useInput } from "../components/InputProvider";
+import { saveReportPdf } from "../lib/savePdf";
 import { InputSection } from "../components/sections/InputSection";
 import { ChartSection } from "../components/sections/ChartSection";
 import { AiSummarySection } from "../components/sections/AiSummarySection";
@@ -28,6 +30,22 @@ export default function Home() {
 
   const birthDate = birthDatePersonalDiagram;
   const chart = personalChart;
+  const [saving, setSaving] = useState(false);
+
+  const handleSavePdf = async () => {
+    const el = document.querySelector("main");
+    if (!el) return;
+    setSaving(true);
+    try {
+      const safe = (name || "命盘").replace(/[\\/:*?"<>|]/g, "").trim();
+      await saveReportPdf(el as HTMLElement, `${safe}-人生蓝图.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("保存失败，请重试。");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <>
@@ -67,6 +85,35 @@ export default function Home() {
       </div>
       <div id="sec-directions" className="w-full scroll-mt-24">
         <DirectionsSection birthDate={birthDate} chart={chart} />
+      </div>
+
+      {/* Save the report as a PDF via the browser print dialog (the print CSS in
+          globals.css lays the page out cleanly for export). */}
+      <div className="flex flex-wrap justify-center gap-3 pt-2 print:hidden">
+        <button
+          type="button"
+          onClick={handleSavePdf}
+          disabled={!name || !birthDate || saving}
+          title={!name || !birthDate ? "请先输入姓名和出生日期" : undefined}
+          className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-500"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M12 15V3" />
+          </svg>
+          {saving ? "保存中…" : "保存为 PDF"}
+        </button>
+        {/* TODO: wire up "save record" — no functionality yet. */}
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-lg border border-amber-300 px-6 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 hover:text-amber-900"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          保存记录
+        </button>
       </div>
     </>
   );

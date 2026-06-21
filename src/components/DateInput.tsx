@@ -152,11 +152,12 @@ export function DateInput({
       />
       {/* Calendar button → opens the OS date picker via a transparent native
           date input layered over the icon (its locale display is hidden). */}
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-amber-600">
+      <span data-no-export className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-amber-600">
         <CalendarIcon />
       </span>
       <input
         ref={pickerRef}
+        data-no-export
         type="date"
         aria-label="选择日期"
         tabIndex={-1}

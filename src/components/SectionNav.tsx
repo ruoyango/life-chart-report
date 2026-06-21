@@ -63,9 +63,6 @@ export function SectionNav() {
   const [lockPopup, setLockPopup] = useState<{ href: string; top: number; left: number } | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
-  // The report page we're on (if any). On non-report pages (e.g. /subscription)
-  // there's no in-page section list to show.
-  const currentPage = PAGES.find((p) => p.href === pathname);
   const { level, loading } = useAccessLevel();
   const startSubscribe = useStartSubscribe();
   // tier 1+ → "upgrade"; tier 0 → "subscribe".
@@ -111,82 +108,71 @@ export function SectionNav() {
     <nav ref={navRef} className="fixed left-0 top-24 z-40">
       {open ? (
         <div className="ml-2 max-h-[80vh] w-44 overflow-y-auto rounded-xl border border-amber-200/70 bg-white/85 p-3 shadow-lg ring-1 ring-amber-100/50 backdrop-blur">
-          {/* Page links — pages above the user's tier are clickable and pop an upsell. */}
-          <div className="mb-3 space-y-1">
+          {/* Page links — the open page's 本页目录 sits directly beneath it. */}
+          <div className="space-y-1">
             {PAGES.map((p) => {
               // Treat "still loading" as unlocked so paying users don't see a
               // flash of locked links on every page load.
               const locked = !loading && level < (p.minLevel ?? 0);
-              if (locked) {
-                return (
-                  <button
-                    key={p.href}
-                    type="button"
-                    onClick={(e) => onLockedClick(p.href, e)}
-                    title="订阅后解锁"
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-amber-100/60 ${
-                      lockPopup?.href === p.href ? "bg-amber-100/60 text-amber-800/70" : "text-amber-800/40"
-                    }`}
-                  >
-                    <span>{p.label}</span>
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="11" width="18" height="11" rx="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </button>
-                );
-              }
+              const isActive = p.href === pathname;
               return (
-                <Link
-                  key={p.href}
-                  href={p.href}
-                  onClick={() => setLockPopup(null)}
-                  className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                    p.href === pathname
-                      ? "bg-amber-500 text-white shadow-sm"
-                      : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
-                  }`}
-                >
-                  {p.label}
-                </Link>
+                <div key={p.href}>
+                  {locked ? (
+                    <button
+                      type="button"
+                      onClick={(e) => onLockedClick(p.href, e)}
+                      title="订阅后解锁"
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-amber-100/60 ${
+                        lockPopup?.href === p.href ? "bg-amber-100/60 text-amber-800/70" : "text-amber-800/40"
+                      }`}
+                    >
+                      <span>{p.label}</span>
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <Link
+                      href={p.href}
+                      onClick={() => setLockPopup(null)}
+                      className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                        isActive
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
+                      }`}
+                    >
+                      {p.label}
+                    </Link>
+                  )}
+
+                  {/* In-page directory, nested directly under the open page. */}
+                  {isActive && !locked && p.sections.length > 0 && (
+                    <div className="mb-1 mt-1.5 pl-2">
+                      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-amber-700">
+                        本页目录
+                      </p>
+                      <ul className="space-y-1 border-l-2 border-amber-200 pl-3">
+                        {p.sections.map((item, i) => (
+                          <li key={item.id}>
+                            <a
+                              href={`#${item.id}`}
+                              className="flex items-center gap-2 py-1 text-sm text-amber-700/70 transition hover:font-semibold hover:text-amber-900"
+                            >
+                              <span className="font-mono text-xs tabular-nums text-amber-400">
+                                {String(i + 1).padStart(2, "0")}
+                              </span>
+                              {item.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
-
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-              {currentPage ? "本页目录" : ""}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setLockPopup(null);
-              }}
-              aria-label="收起目录"
-              title="收起目录"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-amber-600 transition hover:bg-amber-100 hover:text-amber-900"
-            >
-              «
-            </button>
-          </div>
-          {currentPage && (
-            <ul className="space-y-1 border-l-2 border-amber-200 pl-3">
-              {currentPage.sections.map((item, i) => (
-                <li key={item.id}>
-                  <a
-                    href={`#${item.id}`}
-                    className="flex items-center gap-2 py-1 text-sm text-amber-700/70 transition hover:font-semibold hover:text-amber-900"
-                  >
-                    <span className="font-mono text-xs tabular-nums text-amber-400">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       ) : (
         <button

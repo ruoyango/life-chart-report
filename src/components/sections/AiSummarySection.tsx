@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Section, EmptyHint } from "../Section";
 import { type Chart } from "../../lib/numerology";
 import { supabase } from "../../lib/supabase";
@@ -59,6 +59,20 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
     }
   };
 
+  // Auto-generate once per birth date, so the story is ready without clicking
+  // (and is present when the report is saved as a PDF).
+  const autoGenFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!birthDate) {
+      autoGenFor.current = null;
+      return;
+    }
+    if (autoGenFor.current === birthDate) return;
+    autoGenFor.current = birthDate;
+    void generate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [birthDate]);
+
   return (
     <Section title="总体故事">
       {birthDate ? (
@@ -66,7 +80,7 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
           {story ? (
             <div className={cardClass}>
               <p className={bodyClass}>{story}</p>
-              <button type="button" onClick={generate} disabled={busy} className={`mt-4 ${btnClass}`}>
+              <button type="button" onClick={generate} disabled={busy} className={`mt-4 ${btnClass} print:hidden`}>
                 {busy ? "生成中…" : "重新生成"}
               </button>
             </div>
@@ -76,7 +90,7 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
                 综合「数字故事 · 隐藏性格 · 能力分布 · 健康关系 · 事业和职业选择」，
                 生成一段专属于您的人生故事。
               </p>
-              <button type="button" onClick={generate} disabled={busy} className={btnClass}>
+              <button type="button" onClick={generate} disabled={busy} className={`${btnClass} print:hidden`}>
                 {busy ? "生成中…" : "生成总体故事"}
               </button>
             </div>

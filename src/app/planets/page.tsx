@@ -147,6 +147,7 @@ export default function PlanetsPage() {
             />
           }
           rows={adjacentPairs(phone)}
+          ages={["1 - 10", "10 - 18", "18 - 26", "26 - 34", "34 - 42", "42 - 50", "50 - 70"]}
           countLabel="电话号码"
           footer={<FiveElementAdditionDiagram title="五行加数" phone={phone} />}
         />
