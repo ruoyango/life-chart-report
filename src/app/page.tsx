@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useInput } from "../components/InputProvider";
 import { useAuth } from "../components/AuthProvider";
 import { useBlueprints } from "../components/BlueprintsProvider";
 import { saveReportPdf } from "../lib/savePdf";
 import { InputSection } from "../components/sections/InputSection";
 import { ChartSection } from "../components/sections/ChartSection";
-import { AiSummarySection } from "../components/sections/AiSummarySection";
+import { AiSummarySection, type AiSummaryHandle } from "../components/sections/AiSummarySection";
 import { StorySection } from "../components/sections/StorySection";
 import { HiddenCharacterSection } from "../components/sections/HiddenCharacterSection";
 import { AbilitySection } from "../components/sections/AbilitySection";
@@ -39,12 +39,19 @@ export default function Home() {
   const [recordNotice, setRecordNotice] = useState<string | null>(null);
   // Already saved if a record with this name exists — then the button is disabled.
   const alreadySaved = !!name.trim() && records.some((r) => r.name.trim() === name.trim());
+  const summaryRef = useRef<AiSummaryHandle>(null);
 
   const handleSavePdf = async () => {
     const el = document.querySelector("main");
     if (!el) return;
     setSaving(true);
     try {
+      // Generate the AI summary first if it hasn't been generated yet, then let
+      // it paint before capturing.
+      await summaryRef.current?.ensureGenerated();
+      await new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r())),
+      );
       const safe = (name || "命盘").replace(/[\\/:*?"<>|]/g, "").trim();
       await saveReportPdf(el as HTMLElement, `${safe}-人生蓝图.pdf`);
     } catch (e) {
@@ -89,7 +96,7 @@ export default function Home() {
         <ChartSection chart={chart} />
       </div>
       <div id="sec-summary" className="w-full scroll-mt-24">
-        <AiSummarySection birthDate={birthDate} chart={chart} />
+        <AiSummarySection ref={summaryRef} birthDate={birthDate} chart={chart} />
       </div>
       <div id="sec-story" className="w-full scroll-mt-24">
         <StorySection birthDate={birthDate} chart={chart} />

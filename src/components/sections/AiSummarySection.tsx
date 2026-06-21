@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { Section, EmptyHint } from "../Section";
 import { type Chart } from "../../lib/numerology";
 import { supabase } from "../../lib/supabase";
@@ -10,7 +10,12 @@ const bodyClass = "whitespace-pre-line leading-relaxed text-zinc-700";
 const btnClass =
   "rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60";
 
-export function AiSummarySection({ birthDate, chart }: { birthDate: string; chart: Chart }) {
+// Imperative handle so the PDF save can generate the story on demand if it
+// hasn't been generated yet.
+export type AiSummaryHandle = { ensureGenerated: () => Promise<void> };
+
+export const AiSummarySection = forwardRef<AiSummaryHandle, { birthDate: string; chart: Chart }>(
+  function AiSummarySection({ birthDate, chart }, ref) {
   const [story, setStory] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,19 +64,14 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
     }
   };
 
-  // Auto-generate once per birth date, so the story is ready without clicking
-  // (and is present when the report is saved as a PDF).
-  const autoGenFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!birthDate) {
-      autoGenFor.current = null;
-      return;
-    }
-    if (autoGenFor.current === birthDate) return;
-    autoGenFor.current = birthDate;
-    void generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [birthDate]);
+  // Generate only on demand (e.g. when saving the PDF) if there's a birth date
+  // and no story yet. No deps array → the handle always reads current values.
+  useImperativeHandle(ref, () => ({
+    ensureGenerated: async () => {
+      if (!birthDate || story != null || busy) return;
+      await generate();
+    },
+  }));
 
   return (
     <Section title="总体故事">
@@ -102,4 +102,4 @@ export function AiSummarySection({ birthDate, chart }: { birthDate: string; char
       )}
     </Section>
   );
-}
+});

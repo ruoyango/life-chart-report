@@ -57,6 +57,10 @@ export async function saveReportPdf(root: HTMLElement, filename: string) {
         // Drop anything hidden in print (the save + AI generate buttons) and the
         // calendar icon / hidden date overlay.
         doc.querySelectorAll(".print\\:hidden, [data-no-export]").forEach((n) => n.remove());
+        // Always export the diagram in 个人蓝图 mode: drop the shadow-mode chart and
+        // reveal the hidden normal-mode copy (if shadow is showing on screen).
+        doc.querySelectorAll(".export-hide").forEach((n) => n.remove());
+        doc.querySelectorAll(".export-only").forEach((n) => n.classList.remove("hidden"));
         // The title is gradient-clipped transparent text → force a solid colour.
         doc.querySelectorAll<HTMLElement>(".title").forEach((n) => {
           n.style.background = "none";
