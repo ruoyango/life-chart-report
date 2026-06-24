@@ -29,9 +29,28 @@ async function saveBlob(blob: Blob, filename: string) {
       return;
     } catch (e) {
       if ((e as DOMException)?.name === "AbortError") return; // user cancelled the dialog
-      // any other failure → fall through to a normal download
+      // any other failure → fall through
     }
   }
+
+  // Mobile (iOS/Android): share the file itself through the OS share sheet — just
+  // the file, no URL, so no blob: link leaks into the share caption.
+  const file = new File([blob], filename, { type: "application/pdf" });
+  if (
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] }) &&
+    typeof navigator.share === "function"
+  ) {
+    try {
+      await navigator.share({ files: [file] });
+      return;
+    } catch (e) {
+      if ((e as DOMException)?.name === "AbortError") return; // user cancelled the share
+      // otherwise fall through to a normal download
+    }
+  }
+
+  // Fallback: a normal download.
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
