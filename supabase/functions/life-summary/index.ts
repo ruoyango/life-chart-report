@@ -17,7 +17,7 @@ import { createClient } from "npm:@supabase/supabase-js@^2";
 const DEEPSEEK_MODEL = "deepseek-v4-flash";
 // Bump when the prompt / length requirement changes so cached summaries (keyed
 // by this + the source) are regenerated instead of serving the old shorter text.
-const PROMPT_VERSION = "v4";
+const PROMPT_VERSION = "v5";
 // Cached summaries "decay": after this long, the next request regenerates a fresh
 // one. The cache only exists to stop rapid repeat generations for the same chart.
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -31,7 +31,7 @@ const SYSTEM_PROMPT =
   "要求：用简体中文；把要点自然融合成一个完整的人生故事，而不是逐条罗列；" +
   "不要在正文中出现任何具体数字，只描述这些数字所代表的性格特质，而不提及数字本身；" +
   "保持直接、简明，不要堆砌华丽辞藻或添加多余细节；" +
-  "语气真诚、贴近读者；篇幅控制在 400–600 字之间（不少于 400 字，不超过 600 字）；" +
+  "语气真诚、贴近读者；篇幅控制在 300–500 字之间（不少于 300 字，不超过 500 字）；" +
   "只输出故事正文，不要标题、不要要点列表。";
 
 const corsHeaders = {
@@ -246,6 +246,9 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
+        // Disable DeepSeek's default chain-of-thought: this is a creative writing
+        // task that needs no reasoning, and thinking mode roughly doubles latency.
+        thinking: { type: "disabled" },
         temperature: 0.9,
         max_tokens: 2048,
         messages: [
