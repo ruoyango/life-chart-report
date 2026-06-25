@@ -64,9 +64,16 @@ Deno.serve(async (req) => {
     );
     const { data: row } = await admin
       .from("subscriptions")
-      .select("stripe_customer_id")
+      .select("tier,stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
+
+    // Comp / admin account: a hand-granted tier with no Stripe customer. Starting a
+    // real subscription would create a Stripe customer and bill a card, so refuse
+    // checkout (the UI disables the buttons too).
+    if ((row?.tier ?? 0) > 0 && !row?.stripe_customer_id) {
+      return json({ error: "管理员账户无需订阅。" }, 403);
+    }
 
     let customerId: string | undefined = row?.stripe_customer_id ?? undefined;
     if (!customerId) {

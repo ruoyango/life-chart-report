@@ -5,6 +5,7 @@ import { useAuth } from "../../components/AuthProvider";
 import { useAccessLevel } from "../../components/AccessProvider";
 import { useBilling } from "../../components/useBilling";
 import { TIERS } from "../../lib/tiers";
+import { supabase } from "../../lib/supabase";
 
 const primaryBtn =
   "w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60";
@@ -15,6 +16,7 @@ export default function SubscriptionPage() {
   const { level, loading, refresh } = useAccessLevel();
   const { busy, error, startCheckout, openPortal } = useBilling();
   const [notice, setNotice] = useState<"success" | "cancelled" | null>(null);
+  const [isComp, setIsComp] = useState(false);
 
   // Returning from Stripe Checkout: show the notice once, and drop the ?checkout=
   // param so it can't reappear on a reload or when navigating away and back.
@@ -40,6 +42,30 @@ export default function SubscriptionPage() {
       clearTimeout(stop);
     };
   }, [notice, level, refresh]);
+
+  // A comp / admin account is a subscriptions row granted a tier by hand (tier > 0)
+  // with no Stripe customer behind it. It must not hit Checkout/Portal (Stripe has
+  // nothing to manage), so we disable the upgrade / downgrade / cancel buttons.
+  useEffect(() => {
+    let cancelled = false;
+    async function check() {
+      if (!supabase || !user) {
+        setIsComp(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("tier,stripe_customer_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setIsComp((data?.tier ?? 0) > 0 && !data?.stripe_customer_id);
+    }
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   return (
     <div className="w-full">
@@ -74,6 +100,11 @@ export default function SubscriptionPage() {
       {error && (
         <p className="mx-auto mb-6 max-w-md rounded-lg bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
           {error}
+        </p>
+      )}
+      {user && isComp && (
+        <p className="mx-auto mb-6 max-w-md rounded-lg bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-800">
+          您当前是管理员账户，已解锁全部功能，无需订阅。
         </p>
       )}
 
@@ -118,6 +149,20 @@ export default function SubscriptionPage() {
                   ) : (
                     <button type="button" onClick={() => openModal("/subscription")} className={primaryBtn}>
                       登录后订阅
+                    </button>
+                  )
+                ) : isComp ? (
+                  isCurrent ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full rounded-lg bg-amber-100 px-4 py-2.5 text-sm font-semibold text-amber-700"
+                    >
+                      当前方案
+                    </button>
+                  ) : (
+                    <button type="button" disabled className={disabledBtn}>
+                      管理员账户
                     </button>
                   )
                 ) : isCurrent ? (
