@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useInput } from "../components/InputProvider";
 import { useAuth } from "../components/AuthProvider";
+import { useAccessLevel } from "../components/AccessProvider";
 import { useBlueprints } from "../components/BlueprintsProvider";
 import { saveReportPdf } from "../lib/savePdf";
 import { InputSection } from "../components/sections/InputSection";
@@ -33,6 +34,10 @@ export default function Home() {
   const birthDate = birthDatePersonalDiagram;
   const chart = personalChart;
   const { user, openModal } = useAuth();
+  const { level, loading: levelLoading } = useAccessLevel();
+  // The save buttons need a paid plan (tier ≥ 1). Treat "still loading" as
+  // unlocked so paying users don't see a flash of disabled buttons.
+  const tierLocked = !levelLoading && level < 1;
   const { save, update, records } = useBlueprints();
   const [saving, setSaving] = useState(false);
   const [savingRecord, setSavingRecord] = useState(false);
@@ -43,14 +48,16 @@ export default function Home() {
   const match = trimmedName ? records.find((r) => r.name.trim() === trimmedName) : undefined;
   const alreadySaved = !!match && match.birth_date === birthDate;
   const canUpdate = !!match && match.birth_date !== birthDate;
-  // Hint shown under the buttons: login is required first, then birth date, then name.
+  // Hint under the buttons: login → subscription → birth date → name.
   const inputHint = !user
     ? "请先登录以使用此功能"
-    : !birthDate
-      ? "请先输入出生日期"
-      : !name.trim()
-        ? "请先输入姓名"
-        : null;
+    : tierLocked
+      ? "请订阅以使用此功能"
+      : !birthDate
+        ? "请先输入出生日期"
+        : !name.trim()
+          ? "请先输入姓名"
+          : null;
   const summaryRef = useRef<AiSummaryHandle>(null);
 
   const handleSavePdf = async () => {
@@ -137,8 +144,16 @@ export default function Home() {
         <button
           type="button"
           onClick={handleSavePdf}
-          disabled={!user || !name || !birthDate || saving}
-          title={!user ? "请先登录" : !name || !birthDate ? "请先输入姓名和出生日期" : undefined}
+          disabled={!user || tierLocked || !name || !birthDate || saving}
+          title={
+            !user
+              ? "请先登录"
+              : tierLocked
+                ? "请订阅以使用此功能"
+                : !name || !birthDate
+                  ? "请先输入姓名和出生日期"
+                  : undefined
+          }
           className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-500"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -151,17 +166,19 @@ export default function Home() {
         <button
           type="button"
           onClick={handleSaveRecord}
-          disabled={!user || !name || !birthDate || savingRecord || alreadySaved}
+          disabled={!user || tierLocked || !name || !birthDate || savingRecord || alreadySaved}
           title={
             !user
               ? "请先登录"
-              : alreadySaved
-                ? "该姓名已存档"
-                : canUpdate
-                  ? "更新此姓名的出生日期"
-                  : !name || !birthDate
-                    ? "请先输入姓名和出生日期"
-                    : undefined
+              : tierLocked
+                ? "请订阅以使用此功能"
+                : alreadySaved
+                  ? "该姓名已存档"
+                  : canUpdate
+                    ? "更新此姓名的出生日期"
+                    : !name || !birthDate
+                      ? "请先输入姓名和出生日期"
+                      : undefined
           }
           className="inline-flex items-center gap-2 rounded-lg border border-amber-300 px-6 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 hover:text-amber-900 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
         >

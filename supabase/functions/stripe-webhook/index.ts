@@ -2,7 +2,7 @@
 // user's tier: it verifies Stripe's signature and writes `subscriptions`. The
 // client can never set its own tier (Phase 1 RLS blocks writes).
 //
-// Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_TIER1, STRIPE_PRICE_TIER2.
+// Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_TIER1, STRIPE_PRICE_TIER2, STRIPE_PRICE_TIER3.
 // IMPORTANT: deploy WITHOUT JWT verification (Stripe doesn't send a Supabase JWT):
 //   supabase functions deploy stripe-webhook --no-verify-jwt
 
@@ -23,6 +23,7 @@ const admin = createClient(
 function tierForPrice(priceId?: string): number {
   if (priceId && priceId === Deno.env.get("STRIPE_PRICE_TIER1")) return 1;
   if (priceId && priceId === Deno.env.get("STRIPE_PRICE_TIER2")) return 2;
+  if (priceId && priceId === Deno.env.get("STRIPE_PRICE_TIER3")) return 3;
   return 0;
 }
 

@@ -5,6 +5,7 @@
 //   STRIPE_SECRET_KEY      sk_test_... / sk_live_...
 //   STRIPE_PRICE_TIER1     price_...   (Standard, 68 SGD/月)
 //   STRIPE_PRICE_TIER2     price_...   (Premium,  94 SGD/月)
+//   STRIPE_PRICE_TIER3     price_...   (Ultimate, 133 SGD/月)
 // SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are auto-injected.
 //
 // Deploy: supabase functions deploy create-checkout
@@ -30,6 +31,7 @@ const json = (body: unknown, status = 200) =>
 function priceForTier(tier: number): string | undefined {
   if (tier === 1) return Deno.env.get("STRIPE_PRICE_TIER1");
   if (tier === 2) return Deno.env.get("STRIPE_PRICE_TIER2");
+  if (tier === 3) return Deno.env.get("STRIPE_PRICE_TIER3");
   return undefined;
 }
 

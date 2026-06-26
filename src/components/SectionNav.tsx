@@ -70,6 +70,11 @@ export function SectionNav() {
   const startSubscribe = useStartSubscribe();
   // tier 1+ → "upgrade"; tier 0 → "subscribe".
   const isSubscriber = level >= 1;
+  // 蓝图存档 needs a paid plan (tier ≥ 1). "Still loading" → treat as unlocked so
+  // paying users don't see a flash of a locked tab.
+  const archiveLocked = !loading && level < 1;
+  // 记忆训练 needs the 至尊 plan (tier ≥ 3).
+  const memoryLocked = !loading && level < 3;
 
   // 蓝图存档 — the saved-records list (doesn't navigate; opens inline).
   const router = useRouter();
@@ -201,31 +206,48 @@ export function SectionNav() {
 
             {/* 蓝图存档 — a saved-records list that opens inline (no navigation). */}
             <div>
-              <button
-                type="button"
-                onClick={toggleArchive}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  archiveOpen
-                    ? "bg-amber-100/60 text-amber-900"
-                    : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
-                }`}
-              >
-                <span>蓝图存档</span>
-                <svg
-                  className={`h-3.5 w-3.5 transition-transform ${archiveOpen ? "rotate-90" : ""}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              {archiveLocked ? (
+                <button
+                  type="button"
+                  onClick={(e) => onLockedClick("archive", e)}
+                  title="订阅后解锁"
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-amber-100/60 ${
+                    lockPopup?.href === "archive" ? "bg-amber-100/60 text-amber-800/70" : "text-amber-800/40"
+                  }`}
                 >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
+                  <span>蓝图存档</span>
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleArchive}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    archiveOpen
+                      ? "bg-amber-100/60 text-amber-900"
+                      : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
+                  }`}
+                >
+                  <span>蓝图存档</span>
+                  <svg
+                    className={`h-3.5 w-3.5 transition-transform ${archiveOpen ? "rotate-90" : ""}`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              )}
 
-              {archiveOpen && (
+              {!archiveLocked && archiveOpen && (
                 <div className="mb-1 mt-1.5 pl-2">
                   {!user ? (
                     <button
@@ -268,18 +290,35 @@ export function SectionNav() {
               )}
             </div>
 
-            {/* 记忆训练 — a standalone game page, listed below 蓝图存档. */}
-            <Link
-              href="/memory"
-              onClick={() => setLockPopup(null)}
-              className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                pathname === "/memory"
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
-              }`}
-            >
-              记忆训练
-            </Link>
+            {/* 记忆训练 — a standalone game page (至尊 tier), listed below 蓝图存档. */}
+            {memoryLocked ? (
+              <button
+                type="button"
+                onClick={(e) => onLockedClick("memory", e)}
+                title="订阅后解锁"
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-amber-100/60 ${
+                  lockPopup?.href === "memory" ? "bg-amber-100/60 text-amber-800/70" : "text-amber-800/40"
+                }`}
+              >
+                <span>记忆训练</span>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </button>
+            ) : (
+              <Link
+                href="/memory"
+                onClick={() => setLockPopup(null)}
+                className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  pathname === "/memory"
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "text-amber-800 hover:bg-amber-100 hover:text-amber-900"
+                }`}
+              >
+                记忆训练
+              </Link>
+            )}
           </div>
         </div>
       ) : (

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Section } from "../../components/Section";
+import { PageGate } from "../../components/PageGate";
 import { PLANET_COMBOS, PLANETS_ORDER, pairToPlanet } from "../../lib/planets";
 
 // 星属 column metadata for the reference chart (symbol + English name).
@@ -85,6 +86,7 @@ export default function MemoryPage() {
   const pct = (total ? (correct / total) * 100 : 0).toFixed(2);
 
   return (
+    <PageGate minLevel={3}>
     <div id="sec-memory" className="w-full scroll-mt-24">
       <Section title="记忆训练">
         {phase === "ready" ? (
@@ -220,5 +222,6 @@ export default function MemoryPage() {
         )}
       </Section>
     </div>
+    </PageGate>
   );
 }

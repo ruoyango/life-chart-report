@@ -1,7 +1,7 @@
 // Central definition of the three subscription tiers, shared by the pricing
 // page, the account menu, and the gates.
 export type TierInfo = {
-  level: number; // 0 free · 1 standard · 2 premium
+  level: number; // 0 free · 1 standard · 2 premium · 3 ultimate
   name: string;
   price: string;
   tagline: string;
@@ -35,6 +35,13 @@ export const TIERS: TierInfo[] = [
     price: "94 SGD / 月",
     tagline: "全部功能解锁",
     features: ["包含标准版全部内容", "电话号码八大行星分析"],
+  },
+  {
+    level: 3,
+    name: "至尊",
+    price: "133 SGD / 月",
+    tagline: "顶级全功能 + 记忆训练",
+    features: ["包含尊享版全部内容", "八大星属记忆训练"],
   },
 ];
 
